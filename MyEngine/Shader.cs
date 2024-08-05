@@ -67,5 +67,7 @@ namespace MyEngine
         {
             Program.GL.DeleteShader(Id);
         }
+
+        public const string ModelMatrix = "modelMat";
     }
 }

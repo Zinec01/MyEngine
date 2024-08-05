@@ -4,6 +4,7 @@
     {
         public Dictionary<int, Model> Models = [];
         private ShaderProgram ShaderProgram { get; }
+        public Camera Camera { get; private set; }
 
         public Scene()
         {
@@ -19,6 +20,7 @@
                 }
             }
 
+            Camera = new Camera();
             ShaderProgram = new ShaderProgram();
 
             foreach (var shader in shaders)
@@ -26,12 +28,20 @@
                 ShaderProgram.AddShader(shader);
             }
 
-            ShaderProgram.Link();
+            ShaderProgram.AttachShadersAndLinkProgram();
 
             //foreach (var model in Models.Values)
             //{
             //    model.SetupVertexAttribs();
             //}
+        }
+
+        public void UpdateObjects(double deltaTime)
+        {
+            foreach (var model in Models.Values)
+            {
+                model.ExecutePermanentTransforms(deltaTime);
+            }
         }
 
         public void Draw()
@@ -40,6 +50,9 @@
 
             foreach (var model in Models.Values)
             {
+                if (model.Transform.TransformPending)
+                    ShaderProgram.SetUniform(Shader.ModelMatrix, model.Transform.ModelMat);
+
                 model.Draw();
             }
         }

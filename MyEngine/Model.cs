@@ -7,12 +7,16 @@ namespace MyEngine
         private IReadOnlyCollection<float> Vertices { get; }
         private VAO VAO { get; }
         private BufferObject<float> VBO { get; }
+        public Transform Transform { get; }
+
+        public event EventHandler<double> OnPermanentTransform;
 
         public Model(float[] vertices)
         {
             Vertices = vertices;
             VAO = new VAO();
             VBO = new BufferObject<float>(vertices, BufferTargetARB.ArrayBuffer);
+            Transform = new Transform();
 
             SetupVertexAttribs();
         }
@@ -21,6 +25,11 @@ namespace MyEngine
         {
             Program.GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, sizeof(float) * 3, null);
             Program.GL.EnableVertexAttribArray(0);
+        }
+
+        public void ExecutePermanentTransforms(double deltaTime)
+        {
+            OnPermanentTransform?.Invoke(this, deltaTime);
         }
 
         public void Draw()
