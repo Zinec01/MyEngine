@@ -48,10 +48,18 @@
         {
             ShaderProgram.Use();
 
-            foreach (var model in Objects.Values)
+            foreach (var kvp in Objects)
             {
+                var model = kvp.Value;
+
                 if (model.Transform.TransformPending)
                     ShaderProgram.SetUniform(Shader.ModelMatrix, model.Transform.ModelMat);
+
+                if (model.Texture != null)
+                    ShaderProgram.SetUniform(Shader.TextureSampler, 0);
+
+                Program.GL.StencilFunc(Silk.NET.OpenGL.StencilFunction.Always, kvp.Key, 0xFF);
+                Program.GL.StencilOp(Silk.NET.OpenGL.StencilOp.Keep, Silk.NET.OpenGL.StencilOp.Replace, Silk.NET.OpenGL.StencilOp.Replace);
 
                 model.Draw();
             }

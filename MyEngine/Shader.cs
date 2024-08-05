@@ -68,6 +68,7 @@ namespace MyEngine
             Program.GL.DeleteShader(Id);
         }
 
-        public const string ModelMatrix = "modelMat";
+        public const string ModelMatrix = "v_ModelMat";
+        public const string TextureSampler = "f_Tex";
     }
 }

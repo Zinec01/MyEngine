@@ -11,9 +11,9 @@ namespace MyEngine
             Id = Program.GL.GenBuffer();
             Program.GL.BindBuffer(bufferType, Id);
 
-            fixed (void* d = &data[0])
+            fixed (void* dataPtr = &data[0])
             {
-                Program.GL.BufferData(bufferType, (nuint)(data.Length * sizeof(TDataType)), d, bufferUsage);
+                Program.GL.BufferData(bufferType, (nuint)(data.Length * sizeof(TDataType)), dataPtr, bufferUsage);
             }
         }
 

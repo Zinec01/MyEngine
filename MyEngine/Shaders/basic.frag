@@ -2,10 +2,13 @@
 #version 460
 
 in vec3 fPos;
+in vec2 fUv;
 
 out vec4 FragColor;
 
+uniform sampler2D f_Tex;
+
 void main()
 {
-	FragColor = vec4(fPos, 1.0f);
+	FragColor = texture(f_Tex, fUv);
 }

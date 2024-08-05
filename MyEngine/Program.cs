@@ -43,14 +43,20 @@ namespace MyEngine
         private static void OnLoad()
         {
             InputContext = Window.CreateInput();
-            for (int i = 0; i < InputContext.Keyboards.Count; i++)
+            foreach (var keyboard in InputContext.Keyboards)
             {
-                InputContext.Keyboards[i].KeyDown += KeyDown;
+                keyboard.KeyDown += OnKeyDown;
             }
+            foreach (var mouse in InputContext.Mice)
+            {
+                mouse.Click += OnMouseClick;
+            }
+
+            Window.Center();
 
             GL = GL.GetApi(Window);
 
-            Console.WriteLine("VSync " + (Window.VSync ? "ON" : "OFF"));
+            //Console.WriteLine("VSync " + (Window.VSync ? "ON" : "OFF"));
 
             ImGuiController = new ImGuiController(GL, Window, InputContext);
 
@@ -59,42 +65,41 @@ namespace MyEngine
 
             var triangleVerts = new[]
             {
-                -1f, -1f, 0f,
-                 0f,  1f, 0f,
-                 1f, -1f, 0f
+                -1f, -1f, 0f,   0f, 0f,
+                 0f,  1f, 0f, 0.5f, 1f,
+                 1f, -1f, 0f,   1f, 0f
             };
 
             var pyramidVerts = new[]
             {
-                0.0f, 1.0f, 0.0f,
-                -1.0f, -1.0f, 1.0f,
-                1.0f, -1.0f, 1.0f,
-
-                0.0f, 1.0f, 0.0f,
-                1.0f, -1.0f, 1.0f,
-                1.0f, -1.0f, -1.0f,
-
-                0.0f, 1.0f, 0.0f,
-                1.0f, -1.0f, -1.0f,
-                -1.0f, -1.0f, -1.0f,
-
-                0.0f, 1.0f, 0.0f,
-                -1.0f, -1.0f, -1.0f,
-                -1.0f, -1.0f, 1.0f,
-                
-                -1f, -1f, -1f,
-                1f, -1f, 1f,
+                 0f,  1f, 0f,
                 -1f, -1f, 1f,
+                 1f, -1f, 1f,
+
+                 0f,  1f,  0f,
+                 1f, -1f,  1f,
+                 1f, -1f, -1f,
+
+                 0f,  1f,  0f,
+                 1f, -1f, -1f,
+                -1f, -1f, -1f,
+
+                 0f,  1f,  0f,
+                -1f, -1f, -1f,
+                -1f, -1f,  1f,
                 
                 -1f, -1f, -1f,
-                1f, -1f, -1f,
-                1f, -1f, 1f
+                 1f, -1f,  1f,
+                -1f, -1f,  1f,
+                
+                -1f, -1f, -1f,
+                 1f, -1f, -1f,
+                 1f, -1f,  1f
             };
 
             EventHandler<float> transformAction = (sender, deltaTime) =>
             {
-                if (sender is not Model model)
-                    return;
+                if (sender is not Model model) return;
 
                 model.Transform.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, (float)deltaTime / 2));
                 model.Transform.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, (float)deltaTime / 2));
@@ -124,20 +129,29 @@ namespace MyEngine
 
             pyramid.OnPermanentTransform += transformAction;
 
-            var triangle = new Model(triangleVerts);
+            //var obamaTex = new Texture(@"C:\Users\Zinec\Pictures\obama_rect.jpg");
+
+            var triangle = new Model(triangleVerts, @"C:\Users\Zinec\Pictures\obama_rect.jpg");
             triangle.Transform.SetScale(0.25f);
             triangle.Transform.SetPosition(new Vector3(-0.5f, 0, 0));
 
             triangle.OnPermanentTransform += transformAction;
 
             Scene = new Scene();
-            Scene.TryAddModel(1, pyramid);
+            //Scene.TryAddModel(1, pyramid);
             Scene.TryAddModel(2, triangle);
-
+            
             GL.Enable(EnableCap.DepthTest);
             GL.Enable(EnableCap.CullFace);
+            GL.Enable(EnableCap.StencilTest);
             GL.CullFace(TriangleFace.Front);
             //GL.FrontFace(FrontFaceDirection.CW);
+        }
+
+        private static void OnMouseClick(IMouse mouse, MouseButton button, Vector2 position)
+        {
+            //var pos = Scene.Objects.First().Value.Transform.CurrentPosition;
+            //GL.ReadPixels<int>((int)pos.X, (int)pos.Y, (uint)Window.FramebufferSize.X, (uint)Window.FramebufferSize.Y, PixelFormat.DepthStencil, PixelType.Int, out var pixels);
         }
 
         private static void OnUpdate(double deltaTime)
@@ -145,7 +159,7 @@ namespace MyEngine
             if (DateTime.Now.Millisecond % 250 < 10)
             {
                 FPS = (int)(1 / deltaTime);
-                Console.WriteLine($"{FPS} FPS");
+                //Console.WriteLine($"{FPS} FPS");
 
                 if (Window.VSync != VSync)
                 {
@@ -162,7 +176,7 @@ namespace MyEngine
             ImGuiController.Update((float)deltaTime);
 
             GL.ClearColor(0.07f, 0.01f, 0.02f, 1f);
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
             if (ImGuiNET.ImGui.Begin("Info"))
             {
@@ -181,7 +195,7 @@ namespace MyEngine
             Console.WriteLine($"New resolution: {newSize.X}x{newSize.Y}");
         }
 
-        private static void KeyDown(IKeyboard keyboard, Key key, int arg3)
+        private static void OnKeyDown(IKeyboard keyboard, Key key, int arg3)
         {
             switch (key)
             {
@@ -196,7 +210,7 @@ namespace MyEngine
             Scene.Dispose();
             GL.Dispose();
 
-            Console.WriteLine("GG");
+            Console.WriteLine("gg");
         }
     }
 }
