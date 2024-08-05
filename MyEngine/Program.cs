@@ -59,16 +59,42 @@ namespace MyEngine
 
             var triangleVerts = new[]
             {
-                -0.5f, -0.5f, 0f,
-                   0f,  0.5f, 0f,
-                 0.5f, -0.5f, 0f
+                -1f, -1f, 0f,
+                 0f,  1f, 0f,
+                 1f, -1f, 0f
             };
 
-            var triangle = new Model(triangleVerts);
-
-            triangle.OnPermanentTransform += (sender, deltaTime) =>
+            var pyramidVerts = new[]
             {
-                if (sender is not Model model) return;
+                0.0f, 1.0f, 0.0f,
+                -1.0f, -1.0f, 1.0f,
+                1.0f, -1.0f, 1.0f,
+
+                0.0f, 1.0f, 0.0f,
+                1.0f, -1.0f, 1.0f,
+                1.0f, -1.0f, -1.0f,
+
+                0.0f, 1.0f, 0.0f,
+                1.0f, -1.0f, -1.0f,
+                -1.0f, -1.0f, -1.0f,
+
+                0.0f, 1.0f, 0.0f,
+                -1.0f, -1.0f, -1.0f,
+                -1.0f, -1.0f, 1.0f,
+                
+                -1f, -1f, -1f,
+                1f, -1f, 1f,
+                -1f, -1f, 1f,
+                
+                -1f, -1f, -1f,
+                1f, -1f, -1f,
+                1f, -1f, 1f
+            };
+
+            EventHandler<float> transformAction = (sender, deltaTime) =>
+            {
+                if (sender is not Model model)
+                    return;
 
                 model.Transform.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, (float)deltaTime / 2));
                 model.Transform.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, (float)deltaTime / 2));
@@ -92,8 +118,26 @@ namespace MyEngine
                 }
             };
 
+            var pyramid = new Model(pyramidVerts);
+            pyramid.Transform.SetScale(0.25f);
+            pyramid.Transform.SetPosition(new Vector3(0.5f, 0, 0));
+
+            pyramid.OnPermanentTransform += transformAction;
+
+            var triangle = new Model(triangleVerts);
+            triangle.Transform.SetScale(0.25f);
+            triangle.Transform.SetPosition(new Vector3(-0.5f, 0, 0));
+
+            triangle.OnPermanentTransform += transformAction;
+
             Scene = new Scene();
-            Scene.TryAddModel(1, triangle);
+            Scene.TryAddModel(1, pyramid);
+            Scene.TryAddModel(2, triangle);
+
+            GL.Enable(EnableCap.DepthTest);
+            GL.Enable(EnableCap.CullFace);
+            GL.CullFace(TriangleFace.Front);
+            //GL.FrontFace(FrontFaceDirection.CW);
         }
 
         private static void OnUpdate(double deltaTime)
@@ -139,28 +183,11 @@ namespace MyEngine
 
         private static void KeyDown(IKeyboard keyboard, Key key, int arg3)
         {
-            var model = Scene.Models.First().Value;
             switch (key)
             {
                 case Key.Escape:
                     Window.Close();
                     break;
-
-                //case Key.Right:
-                //    model.Transform.Move(new Vector3(0.1f, 0, 0));
-                //    break;
-
-                //case Key.Left:
-                //    model.Transform.Move(new Vector3(-0.1f, 0, 0));
-                //    break;
-
-                //case Key.Up:
-                //    model.Transform.Move(new Vector3(0, 0.1f, 0));
-                //    break;
-
-                //case Key.Down:
-                //    model.Transform.Move(new Vector3(0, -0.1f, 0));
-                //    break;
             }
         }
 

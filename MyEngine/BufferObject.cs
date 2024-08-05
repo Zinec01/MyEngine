@@ -6,14 +6,14 @@ namespace MyEngine
     {
         private uint Id { get; }
 
-        public unsafe BufferObject(ReadOnlySpan<TDataType> vertices, BufferTargetARB bufferType, BufferUsageARB bufferUsage = BufferUsageARB.StaticDraw)
+        public unsafe BufferObject(ReadOnlySpan<TDataType> data, BufferTargetARB bufferType, BufferUsageARB bufferUsage = BufferUsageARB.StaticDraw)
         {
             Id = Program.GL.GenBuffer();
             Program.GL.BindBuffer(bufferType, Id);
 
-            fixed (void* data = &vertices[0])
+            fixed (void* d = &data[0])
             {
-                Program.GL.BufferData(bufferType, (nuint)(vertices.Length * sizeof(TDataType)), data, bufferUsage);
+                Program.GL.BufferData(bufferType, (nuint)(data.Length * sizeof(TDataType)), d, bufferUsage);
             }
         }
 

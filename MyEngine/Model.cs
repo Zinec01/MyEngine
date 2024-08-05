@@ -9,7 +9,7 @@ namespace MyEngine
         private BufferObject<float> VBO { get; }
         public Transform Transform { get; }
 
-        public event EventHandler<double> OnPermanentTransform;
+        public event EventHandler<float> OnPermanentTransform;
 
         public Model(float[] vertices)
         {
@@ -27,15 +27,16 @@ namespace MyEngine
             Program.GL.EnableVertexAttribArray(0);
         }
 
-        public void ExecutePermanentTransforms(double deltaTime)
+        public void Update(float deltaTime)
         {
             OnPermanentTransform?.Invoke(this, deltaTime);
+            Transform.Update(deltaTime * 5);
         }
 
         public void Draw()
         {
-            //VAO.Bind();
-            Program.GL.DrawArrays(GLEnum.Triangles, 0, 3);
+            VAO.Bind();
+            Program.GL.DrawArrays(GLEnum.Triangles, 0, (uint)Vertices.Count / 3);
         }
 
         public void Dispose()

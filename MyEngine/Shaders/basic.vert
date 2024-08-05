@@ -10,5 +10,5 @@ out vec3 fPos;
 void main()
 {
 	gl_Position = modelMat * vec4(vPos, 1.0f);
-	fPos = abs(vPos);
+	fPos = abs(vec3(gl_Position));
 }

@@ -2,7 +2,7 @@
 {
     internal class Scene : IDisposable
     {
-        public Dictionary<int, Model> Models = [];
+        public Dictionary<int, Model> Objects = [];
         private ShaderProgram ShaderProgram { get; }
         public Camera Camera { get; private set; }
 
@@ -38,9 +38,9 @@
 
         public void UpdateObjects(double deltaTime)
         {
-            foreach (var model in Models.Values)
+            foreach (var model in Objects.Values)
             {
-                model.ExecutePermanentTransforms(deltaTime);
+                model.Update((float)deltaTime);
             }
         }
 
@@ -48,7 +48,7 @@
         {
             ShaderProgram.Use();
 
-            foreach (var model in Models.Values)
+            foreach (var model in Objects.Values)
             {
                 if (model.Transform.TransformPending)
                     ShaderProgram.SetUniform(Shader.ModelMatrix, model.Transform.ModelMat);
@@ -59,12 +59,12 @@
 
         public bool TryAddModel(int id, Model model)
         {
-            return Models.TryAdd(id, model);
+            return Objects.TryAdd(id, model);
         }
 
         public void Dispose()
         {
-            foreach (var model in Models.Values)
+            foreach (var model in Objects.Values)
             {
                 model.Dispose();
             }
