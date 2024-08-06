@@ -19,16 +19,16 @@ namespace MyEngine
 
         private uint Init()
         {
-            var id = Program.GL.CreateShader(Type == ShaderType.Vertex ? GLEnum.VertexShader : GLEnum.FragmentShader);
+            var id = App.GL.CreateShader(Type == ShaderType.Vertex ? GLEnum.VertexShader : GLEnum.FragmentShader);
 
             using (var sr = new StreamReader(FilePath))
             {
-                Program.GL.ShaderSource(id, sr.ReadToEnd());
+                App.GL.ShaderSource(id, sr.ReadToEnd());
             }
 
-            Program.GL.CompileShader(id);
+            App.GL.CompileShader(id);
 
-            var info = Program.GL.GetShaderInfoLog(id);
+            var info = App.GL.GetShaderInfoLog(id);
             if (!string.IsNullOrEmpty(info))
             {
                 Console.WriteLine($"Error with compiling shader at {FilePath}: {info}");
@@ -41,20 +41,21 @@ namespace MyEngine
 
         public void Attach(uint programId)
         {
-            Program.GL.AttachShader(programId, Id);
+            App.GL.AttachShader(programId, Id);
             IsAttached = true;
         }
 
         public void Detach(uint programId)
         {
-            Program.GL.DetachShader(programId, Id);
+            App.GL.DetachShader(programId, Id);
             IsAttached = false;
         }
 
         public enum ShaderType
         {
             Vertex,
-            Fragment
+            Fragment,
+            Compute
         }
 
         public void Dispose(uint programId)
@@ -65,10 +66,10 @@ namespace MyEngine
 
         public void Dispose()
         {
-            Program.GL.DeleteShader(Id);
+            App.GL.DeleteShader(Id);
         }
 
-        public const string ModelMatrix = "v_ModelMat";
-        public const string TextureSampler = "f_Tex";
+        public const string ModelMatrix = "v_uModelMat";
+        public const string TextureSampler = "f_uTex";
     }
 }

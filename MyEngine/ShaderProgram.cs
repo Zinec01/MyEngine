@@ -10,9 +10,16 @@ namespace MyEngine
 
         public bool IsLinked { get; private set; } = false;
 
-        public ShaderProgram()
+        public ShaderProgram(Shader vertex, Shader fragment)
         {
-            Id = Program.GL.CreateProgram();
+            Id = App.GL.CreateProgram();
+            Shaders.Add(vertex);
+            Shaders.Add(fragment);
+        }
+
+        public ShaderProgram(string vertexPath, string fragmentPath)
+            : this(new Shader(vertexPath, Shader.ShaderType.Vertex), new Shader(fragmentPath, Shader.ShaderType.Fragment))
+        {
         }
 
         public bool AddShader(Shader shader)
@@ -34,12 +41,12 @@ namespace MyEngine
                 shader.Attach(Id);
             }
 
-            Program.GL.LinkProgram(Id);
+            App.GL.LinkProgram(Id);
 
-            Program.GL.GetProgram(Id, GLEnum.LinkStatus, out var status);
+            App.GL.GetProgram(Id, GLEnum.LinkStatus, out var status);
             if (status == 0)
             {
-                var info = Program.GL.GetProgramInfoLog(Id);
+                var info = App.GL.GetProgramInfoLog(Id);
                 Console.WriteLine($"Error linking Shader Program: {info}");
 
                 Environment.Exit(0);
@@ -57,33 +64,33 @@ namespace MyEngine
         {
             var location = GetUniformLocation(name);
 
-            Program.GL.Uniform1(location, value);
+            App.GL.Uniform1(location, value);
         }
 
         public void SetUniform(string name, float value)
         {
             var location = GetUniformLocation(name);
 
-            Program.GL.Uniform1(location, value);
+            App.GL.Uniform1(location, value);
         }
 
         public void SetUniform(string name, Vector3 value)
         {
             var location = GetUniformLocation(name);
 
-            Program.GL.Uniform3(location, value);
+            App.GL.Uniform3(location, value);
         }
 
         public unsafe void SetUniform(string name, Matrix4x4 value)
         {
             var location = GetUniformLocation(name);
 
-            Program.GL.UniformMatrix4(location, 1, false, (float*)&value);
+            App.GL.UniformMatrix4(location, 1, false, (float*)&value);
         }
 
         private int GetUniformLocation(string name)
         {
-            var location = Program.GL.GetUniformLocation(Id, name);
+            var location = App.GL.GetUniformLocation(Id, name);
             if (location < 0)
             {
                 Console.WriteLine($"Shader variable {name} not found");
@@ -96,12 +103,12 @@ namespace MyEngine
 
         public void Use()
         {
-            Program.GL.UseProgram(Id);
+            App.GL.UseProgram(Id);
         }
 
         public void Dispose()
         {
-            Program.GL.DeleteProgram(Id);
+            App.GL.DeleteProgram(Id);
         }
     }
 }

@@ -6,18 +6,18 @@
 
         public VAO()
         {
-            Id = Program.GL.GenVertexArray();
+            Id = App.GL.GenVertexArray();
             Bind();
         }
 
         public void Bind()
         {
-            Program.GL.BindVertexArray(Id);
+            App.GL.BindVertexArray(Id);
         }
 
         public void Dispose()
         {
-            Program.GL.DeleteVertexArray(Id);
+            App.GL.DeleteVertexArray(Id);
         }
     }
 }

@@ -8,18 +8,18 @@ namespace MyEngine
 
         public unsafe BufferObject(ReadOnlySpan<TDataType> data, BufferTargetARB bufferType, BufferUsageARB bufferUsage = BufferUsageARB.StaticDraw)
         {
-            Id = Program.GL.GenBuffer();
-            Program.GL.BindBuffer(bufferType, Id);
+            Id = App.GL.GenBuffer();
+            App.GL.BindBuffer(bufferType, Id);
 
             fixed (void* dataPtr = &data[0])
             {
-                Program.GL.BufferData(bufferType, (nuint)(data.Length * sizeof(TDataType)), dataPtr, bufferUsage);
+                App.GL.BufferData(bufferType, (nuint)(data.Length * sizeof(TDataType)), dataPtr, bufferUsage);
             }
         }
 
         public void Dispose()
         {
-            Program.GL.DeleteBuffer(Id);
+            App.GL.DeleteBuffer(Id);
         }
     }
 }

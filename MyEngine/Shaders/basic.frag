@@ -4,11 +4,11 @@
 in vec3 fPos;
 in vec2 fUv;
 
-out vec4 FragColor;
+out vec4 res_FragColor;
 
-uniform sampler2D f_Tex;
+uniform sampler2D f_uTex;
 
 void main()
 {
-	FragColor = texture(f_Tex, fUv);
+	res_FragColor = texture(f_uTex, fUv);
 }

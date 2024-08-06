@@ -8,25 +8,27 @@
 
         public Scene()
         {
-            var shaders = new List<Shader>();
-            foreach (var file in Directory.GetFiles(@"..\..\..\Shaders"))
-            {
-                if (File.Exists(file))
-                {
-                    var fileType = file[(file.LastIndexOf('.') + 1)..];
-                    if (fileType is not "vert" and not "frag") continue;
+            //var shaders = new List<Shader>();
+            //foreach (var file in Directory.GetFiles(@"..\..\..\Shaders"))
+            //{
+            //    if (File.Exists(file))
+            //    {
+            //        var fileType = file[(file.LastIndexOf('.') + 1)..];
+            //        if (fileType is not "vert" and not "frag") continue;
 
-                    shaders.Add(new Shader(file, fileType == "vert" ? Shader.ShaderType.Vertex : Shader.ShaderType.Fragment));
-                }
-            }
+            //        shaders.Add(new Shader(file, fileType == "vert" ? Shader.ShaderType.Vertex : Shader.ShaderType.Fragment));
+            //    }
+            //}
 
             Camera = new Camera();
-            ShaderProgram = new ShaderProgram();
+            ShaderProgram = new ShaderProgram(@"..\..\..\Shaders\basic.vert", @"..\..\..\Shaders\basic.frag");
 
-            foreach (var shader in shaders)
-            {
-                ShaderProgram.AddShader(shader);
-            }
+            // TODO: Move shader program out of scene and make them static to use freely with models
+
+            //foreach (var shader in shaders)
+            //{
+            //    ShaderProgram.AddShader(shader);
+            //}
 
             ShaderProgram.AttachShadersAndLinkProgram();
 
@@ -52,16 +54,10 @@
             {
                 var model = kvp.Value;
 
-                if (model.Transform.TransformPending)
-                    ShaderProgram.SetUniform(Shader.ModelMatrix, model.Transform.ModelMat);
+                //Application.GL.StencilFunc(Silk.NET.OpenGL.StencilFunction.Always, kvp.Key, 0xFF);
+                //Application.GL.StencilOp(Silk.NET.OpenGL.StencilOp.Keep, Silk.NET.OpenGL.StencilOp.Replace, Silk.NET.OpenGL.StencilOp.Replace);
 
-                if (model.Texture != null)
-                    ShaderProgram.SetUniform(Shader.TextureSampler, 0);
-
-                Program.GL.StencilFunc(Silk.NET.OpenGL.StencilFunction.Always, kvp.Key, 0xFF);
-                Program.GL.StencilOp(Silk.NET.OpenGL.StencilOp.Keep, Silk.NET.OpenGL.StencilOp.Replace, Silk.NET.OpenGL.StencilOp.Replace);
-
-                model.Draw();
+                model.Draw(ShaderProgram);
             }
         }
 
