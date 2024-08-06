@@ -67,9 +67,9 @@ internal class App
 
         var triangleVerts = new[]
         {
-            -1f, -1f, 0f,   0f, 1f,
              0f,  1f, 0f, 0.5f, 0f,
-             1f, -1f, 0f,   1f, 1f
+             1f, -1f, 0f,   1f, 1f,
+            -1f, -1f, 0f,   0f, 1f
         };
 
         var triangleInds = new[] { 0, 1, 2 };
@@ -79,36 +79,24 @@ internal class App
              0f,  1f,  0f, 0.5f, 0f,
             -1f, -1f,  1f,   1f, 1f,
              1f, -1f,  1f,   0f, 1f,
-
-             0f,  1f,  0f, 0.5f, 0f,
-             1f, -1f,  1f,   1f, 1f,
              1f, -1f, -1f,   0f, 1f,
-
-             0f,  1f,  0f, 0.5f, 0f,
              1f, -1f, -1f,   1f, 1f,
             -1f, -1f, -1f,   0f, 1f,
-
-             0f,  1f,  0f, 0.5f, 0f,
             -1f, -1f, -1f,   1f, 1f,
             -1f, -1f,  1f,   0f, 1f,
-
             -1f, -1f, -1f,   0f, 0f,
-             1f, -1f, -1f,   1f, 0f,
-            -1f, -1f,  1f,   0f, 1f,
-
-            -1f, -1f,  1f,   0f, 1f,
              1f, -1f, -1f,   1f, 0f,
              1f, -1f,  1f,   1f, 1f
         };
 
         var pyramidInds = new[]
         {
-             0,  1,  2,
-             3,  4,  5,
-             6,  7,  8,
-             9, 10, 11,
-            12, 13, 14,
-            15, 16, 17
+             0, 1, 2,
+             0, 1, 3,
+             0, 4, 5,
+             0, 6, 7,
+             8, 9, 7,
+             7, 9, 10
         };
 
         var squareVerts = new[]

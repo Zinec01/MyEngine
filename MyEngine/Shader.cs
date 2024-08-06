@@ -14,14 +14,14 @@ namespace MyEngine
         {
             FilePath = filePath;
             Type = type;
-            Id = Init();
+            Id = Init(filePath, type);
         }
 
-        private uint Init()
+        private static uint Init(string filePath, ShaderType type)
         {
-            var id = App.GL.CreateShader(Type == ShaderType.Vertex ? GLEnum.VertexShader : GLEnum.FragmentShader);
+            var id = App.GL.CreateShader(type);
 
-            using (var sr = new StreamReader(FilePath))
+            using (var sr = new StreamReader(filePath))
             {
                 App.GL.ShaderSource(id, sr.ReadToEnd());
             }
@@ -31,7 +31,7 @@ namespace MyEngine
             var info = App.GL.GetShaderInfoLog(id);
             if (!string.IsNullOrEmpty(info))
             {
-                Console.WriteLine($"Error with compiling shader at {FilePath}: {info}");
+                Console.WriteLine($"Error with compiling shader at {filePath}:\n{info}");
 
                 Environment.Exit(0);
             }
@@ -49,13 +49,6 @@ namespace MyEngine
         {
             App.GL.DetachShader(programId, Id);
             IsAttached = false;
-        }
-
-        public enum ShaderType
-        {
-            Vertex,
-            Fragment,
-            Compute
         }
 
         public void Dispose(uint programId)

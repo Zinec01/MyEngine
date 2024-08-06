@@ -18,7 +18,7 @@ namespace MyEngine
         }
 
         public ShaderProgram(string vertexPath, string fragmentPath)
-            : this(new Shader(vertexPath, Shader.ShaderType.Vertex), new Shader(fragmentPath, Shader.ShaderType.Fragment))
+            : this(new Shader(vertexPath, ShaderType.VertexShader), new Shader(fragmentPath, ShaderType.FragmentShader))
         {
         }
 
@@ -47,7 +47,7 @@ namespace MyEngine
             if (status == 0)
             {
                 var info = App.GL.GetProgramInfoLog(Id);
-                Console.WriteLine($"Error linking Shader Program: {info}");
+                Console.WriteLine($"Error linking Shader Program:\n{info}");
 
                 Environment.Exit(0);
             }
@@ -56,7 +56,7 @@ namespace MyEngine
             
             foreach (var shader in Shaders)
             {
-                shader.Dispose(Id);
+                shader.Detach(Id);
             }
         }
 

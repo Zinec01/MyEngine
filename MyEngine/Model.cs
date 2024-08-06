@@ -31,7 +31,7 @@ namespace MyEngine
             Texture = new Texture(texturePath);
         }
 
-        public unsafe void SetupVertexAttribs()
+        public static unsafe void SetupVertexAttribs()
         {
             App.GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, (uint)sizeof(float) * 5, null);
             App.GL.EnableVertexAttribArray(0);
@@ -49,18 +49,40 @@ namespace MyEngine
             Transform.Update(deltaTime * 5);
         }
 
+        private Texture TexGreen { get; } = new(@"..\..\..\Textures\green.png");
+
         public unsafe void Draw(ShaderProgram program)
         {
             VAO.Bind();
-            Texture.Activate();
 
             if (Transform.TransformPending)
                 program.SetUniform(Shader.ModelMatrix, Transform.ModelMat);
 
             if (Texture != null)
+            {
+                Texture.Activate();
                 program.SetUniform(Shader.TextureSampler, 0);
+            }
 
             App.GL.DrawElements(PrimitiveType.Triangles, (uint)Indices.Count, DrawElementsType.UnsignedInt, null);
+
+
+            var origScale = Transform.CurrentScale;
+            TexGreen.Activate();
+
+            Transform.SetScale(origScale * 1.01f);
+            program.SetUniform(Shader.ModelMatrix, Transform.ModelMat);
+            App.GL.DrawElements(PrimitiveType.LineStrip, (uint)Indices.Count + 1, DrawElementsType.UnsignedInt, null);
+
+            Transform.SetScale(origScale * 1.03f);
+            program.SetUniform(Shader.ModelMatrix, Transform.ModelMat);
+            App.GL.DrawElements(PrimitiveType.LineStrip, (uint)Indices.Count + 1, DrawElementsType.UnsignedInt, null);
+
+            Transform.SetScale(origScale * 1.05f);
+            program.SetUniform(Shader.ModelMatrix, Transform.ModelMat);
+            App.GL.DrawElements(PrimitiveType.LineStrip, (uint)Indices.Count + 1, DrawElementsType.UnsignedInt, null);
+
+            Transform.SetScale(origScale);
         }
 
         public void Dispose()
