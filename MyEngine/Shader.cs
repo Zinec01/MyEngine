@@ -62,6 +62,8 @@ internal class Shader : IDisposable
         Game.GL.DeleteShader(Id);
     }
 
-    public const string ModelMatrix = "v_uModelMat";
-    public const string TextureSampler = "f_uTex";
+    public const string ModelMatrix = "vuModelMat";
+    public const string ViewMatrix = "vuViewMat";
+    public const string ProjectionMatrix = "vuProjectMat";
+    public const string TextureSampler = "fuTex";
 }

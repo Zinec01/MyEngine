@@ -1,14 +1,14 @@
 ﻿//#version 330 core
 #version 460
 
-in vec3 fPos;
-in vec2 fUv;
+in vec3 vfPos;
+in vec2 vfUv;
 
-out vec4 res_FragColor;
+out vec4 foFragColor;
 
-uniform sampler2D f_uTex;
+uniform sampler2D fuTex;
 
 void main()
 {
-	res_FragColor = texture(f_uTex, fUv);
+	foFragColor = texture(fuTex, vfUv);
 }

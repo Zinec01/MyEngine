@@ -26,6 +26,7 @@ internal class Scene : IDisposable
         //}
 
         Camera = new Camera();
+
         ShaderProgram = new ShaderProgram(@"..\..\..\Shaders\basic.vert", @"..\..\..\Shaders\basic.frag");
 
         // TODO: Move shader program out of scene and make them static to use freely with models
@@ -54,6 +55,9 @@ internal class Scene : IDisposable
     public void Draw()
     {
         ShaderProgram.Use();
+
+        ShaderProgram?.SetUniform(Shader.ProjectionMatrix, Camera.ProjectMat);
+        ShaderProgram?.SetUniform(Shader.ViewMatrix, Camera.ViewMat);
 
         foreach (var model in Objects)
         {

@@ -10,7 +10,7 @@ namespace MyEngine;
 internal class Game
 {
     public static GL GL { get; private set; }
-    private IWindow Window { get; set; }
+    public IWindow Window { get; private set; }
     private IInputContext InputContext { get; set; }
     private ImGuiController ImGuiController { get; set; }
 
