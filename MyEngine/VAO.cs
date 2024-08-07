@@ -1,23 +1,22 @@
-﻿namespace MyEngine
+﻿namespace MyEngine;
+
+internal class VAO : IDisposable
 {
-    internal class VAO : IDisposable
+    private uint Id { get; }
+
+    public VAO()
     {
-        private uint Id { get; }
+        Id = Game.GL.GenVertexArray();
+        Bind();
+    }
 
-        public VAO()
-        {
-            Id = App.GL.GenVertexArray();
-            Bind();
-        }
+    public void Bind()
+    {
+        Game.GL.BindVertexArray(Id);
+    }
 
-        public void Bind()
-        {
-            App.GL.BindVertexArray(Id);
-        }
-
-        public void Dispose()
-        {
-            App.GL.DeleteVertexArray(Id);
-        }
+    public void Dispose()
+    {
+        Game.GL.DeleteVertexArray(Id);
     }
 }

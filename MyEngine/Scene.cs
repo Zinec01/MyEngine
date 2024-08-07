@@ -1,79 +1,76 @@
-﻿namespace MyEngine
+﻿namespace MyEngine;
+
+internal class Scene : IDisposable
 {
-    internal class Scene : IDisposable
+    private static uint _idCounter = 0;
+    public uint Id { get; }
+
+    public List<Model> Objects { get; } = [];
+    private ShaderProgram ShaderProgram { get; }
+    public Camera Camera { get; private set; }
+
+    public Scene()
     {
-        public Dictionary<int, Model> Objects = [];
-        private ShaderProgram ShaderProgram { get; }
-        public Camera Camera { get; private set; }
+        Id = _idCounter++;
 
-        public Scene()
+        //var shaders = new List<Shader>();
+        //foreach (var file in Directory.GetFiles(@"..\..\..\Shaders"))
+        //{
+        //    if (File.Exists(file))
+        //    {
+        //        var fileType = file[(file.LastIndexOf('.') + 1)..];
+        //        if (fileType is not "vert" and not "frag") continue;
+
+        //        shaders.Add(new Shader(file, fileType == "vert" ? Shader.ShaderType.Vertex : Shader.ShaderType.Fragment));
+        //    }
+        //}
+
+        Camera = new Camera();
+        ShaderProgram = new ShaderProgram(@"..\..\..\Shaders\basic.vert", @"..\..\..\Shaders\basic.frag");
+
+        // TODO: Move shader program out of scene and make them static to use freely with models
+
+        //foreach (var shader in shaders)
+        //{
+        //    ShaderProgram.AddShader(shader);
+        //}
+
+        ShaderProgram.AttachShadersAndLinkProgram();
+
+        //foreach (var model in Models.Values)
+        //{
+        //    model.SetupVertexAttribs();
+        //}
+    }
+
+    public void UpdateObjects(float deltaTime)
+    {
+        foreach (var model in Objects)
         {
-            //var shaders = new List<Shader>();
-            //foreach (var file in Directory.GetFiles(@"..\..\..\Shaders"))
-            //{
-            //    if (File.Exists(file))
-            //    {
-            //        var fileType = file[(file.LastIndexOf('.') + 1)..];
-            //        if (fileType is not "vert" and not "frag") continue;
+            model.Update(deltaTime);
+        }
+    }
 
-            //        shaders.Add(new Shader(file, fileType == "vert" ? Shader.ShaderType.Vertex : Shader.ShaderType.Fragment));
-            //    }
-            //}
+    public void Draw()
+    {
+        ShaderProgram.Use();
 
-            Camera = new Camera();
-            ShaderProgram = new ShaderProgram(@"..\..\..\Shaders\basic.vert", @"..\..\..\Shaders\basic.frag");
+        foreach (var model in Objects)
+        {
+            //Application.GL.StencilFunc(Silk.NET.OpenGL.StencilFunction.Always, kvp.Key, 0xFF);
+            //Application.GL.StencilOp(Silk.NET.OpenGL.StencilOp.Keep, Silk.NET.OpenGL.StencilOp.Replace, Silk.NET.OpenGL.StencilOp.Replace);
 
-            // TODO: Move shader program out of scene and make them static to use freely with models
+            model.Draw(ShaderProgram);
+        }
+    }
 
-            //foreach (var shader in shaders)
-            //{
-            //    ShaderProgram.AddShader(shader);
-            //}
-
-            ShaderProgram.AttachShadersAndLinkProgram();
-
-            //foreach (var model in Models.Values)
-            //{
-            //    model.SetupVertexAttribs();
-            //}
+    public void Dispose()
+    {
+        foreach (var model in Objects)
+        {
+            model.Dispose();
         }
 
-        public void UpdateObjects(double deltaTime)
-        {
-            foreach (var model in Objects.Values)
-            {
-                model.Update((float)deltaTime);
-            }
-        }
-
-        public void Draw()
-        {
-            ShaderProgram.Use();
-
-            foreach (var kvp in Objects)
-            {
-                var model = kvp.Value;
-
-                //Application.GL.StencilFunc(Silk.NET.OpenGL.StencilFunction.Always, kvp.Key, 0xFF);
-                //Application.GL.StencilOp(Silk.NET.OpenGL.StencilOp.Keep, Silk.NET.OpenGL.StencilOp.Replace, Silk.NET.OpenGL.StencilOp.Replace);
-
-                model.Draw(ShaderProgram);
-            }
-        }
-
-        public bool TryAddModel(int id, Model model)
-        {
-            return Objects.TryAdd(id, model);
-        }
-
-        public void Dispose()
-        {
-            foreach (var model in Objects.Values)
-            {
-                model.Dispose();
-            }
-
-            ShaderProgram.Dispose();
-        }
+        ShaderProgram.Dispose();
     }
 }

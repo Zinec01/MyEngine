@@ -7,7 +7,7 @@ using Silk.NET.Windowing;
 
 namespace MyEngine;
 
-internal class App
+internal class Game
 {
     public static GL GL { get; private set; }
     private IWindow Window { get; set; }
@@ -16,11 +16,20 @@ internal class App
 
     public static int FPS { get; private set; }
     private static bool VSync;
-    private static DateTime Started { get; set; }
+    public static DateTime Start { get; private set; }
 
-    private static Scene Scene { get; set; }
+    private List<Scene> Scenes { get; } = [];
+    private int _activeSceneID = 0;
 
-    public App(int width, int height, string name)
+    private Scene? ActiveScene => Scenes.FirstOrDefault(x => x.Id == _activeSceneID);
+
+    public static event EventHandler<byte> MouseScroll;
+    public static event EventHandler<Vector2> MouseClick;
+    public static event EventHandler<Vector2> MouseMove;
+    public static event EventHandler<Key> KeyDown;
+
+
+    public Game(int width, int height, string name)
     {
         var options = WindowOptions.Default;
         options.Size = new Vector2D<int>(width, height);
@@ -44,6 +53,8 @@ internal class App
 
     private void OnLoad()
     {
+        Console.WriteLine("Hello there");
+
         InputContext = Window.CreateInput();
         foreach (var keyboard in InputContext.Keyboards)
         {
@@ -53,6 +64,8 @@ internal class App
         {
             mouse.DoubleClickTime = 0;
             mouse.Click += OnMouseClick;
+            mouse.MouseMove += OnMouseMove;
+            mouse.Scroll += OnMouseScroll;
         }
         Window.Center();
 
@@ -62,7 +75,7 @@ internal class App
 
         ImGuiController = new ImGuiController(GL, Window, InputContext);
 
-        Started = DateTime.Now;
+        Start = DateTime.Now;
         VSync = Window.VSync;
 
         var triangleVerts = new[]
@@ -117,60 +130,58 @@ internal class App
         {
             if (sender is not Model model) return;
 
-            model.Transform.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, (float)deltaTime / 2));
-            model.Transform.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, (float)deltaTime / 2));
-            model.Transform.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitZ, (float)deltaTime / 2));
+            model.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, (float)deltaTime / 2));
+            model.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, (float)deltaTime / 2));
+            model.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitZ, (float)deltaTime / 2));
 
             if (InputContext.Keyboards[0].IsKeyPressed(Key.Left))
             {
-                model.Transform.Move(new Vector3((float)-deltaTime, 0, 0));
+                model.Move(new Vector3((float)-deltaTime, 0, 0));
             }
             if (InputContext.Keyboards[0].IsKeyPressed(Key.Right))
             {
-                model.Transform.Move(new Vector3((float)deltaTime, 0, 0));
+                model.Move(new Vector3((float)deltaTime, 0, 0));
             }
             if (InputContext.Keyboards[0].IsKeyPressed(Key.Up))
             {
-                model.Transform.Move(new Vector3(0, (float)deltaTime, 0));
+                model.Move(new Vector3(0, (float)deltaTime, 0));
             }
             if (InputContext.Keyboards[0].IsKeyPressed(Key.Down))
             {
-                model.Transform.Move(new Vector3(0, (float)-deltaTime, 0));
+                model.Move(new Vector3(0, (float)-deltaTime, 0));
             }
         };
 
         var pyramid = new Model(pyramidVerts, pyramidInds, @"..\..\..\Textures\obama.jpg");
-        pyramid.Transform.SetScale(0.25f);
-        pyramid.Transform.SetPosition(new Vector3(0.5f, 0, 0));
-        //pyramid.Transform.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, 1f));
+        pyramid.SetScale(0.25f);
+        pyramid.SetPosition(new Vector3(0.5f, 0, 0));
+        //pyramid.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, 1f));
 
         pyramid.OnPermanentTransform += transformAction;
 
         var triangle = new Model(triangleVerts, triangleInds, @"..\..\..\Textures\obama.jpg");
-        triangle.Transform.SetScale(0.25f);
-        triangle.Transform.SetPosition(new Vector3(-0.5f, 0, 0));
+        triangle.SetScale(0.25f);
+        triangle.SetPosition(new Vector3(-0.5f, 0, 0));
         triangle.OnPermanentTransform += transformAction;
 
         var square = new Model(squareVerts, squareInds, @"..\..\..\Textures\obama.jpg");
-        square.Transform.SetScale(0.25f);
+        square.SetScale(0.25f);
         square.OnPermanentTransform += transformAction;
 
-        Scene = new Scene();
-        Scene.TryAddModel(1, pyramid);
-        Scene.TryAddModel(2, triangle);
-        Scene.TryAddModel(3, square);
+        var scene = new Scene();
+        scene.Objects.Add(pyramid);
+        scene.Objects.Add(triangle);
+        scene.Objects.Add(square);
+
+        Scenes.Add(scene);
 
         GL.Enable(EnableCap.DepthTest);
         GL.Enable(EnableCap.CullFace);
-        GL.Enable(EnableCap.StencilTest);
+        //GL.Enable(EnableCap.StencilTest);
         GL.CullFace(TriangleFace.Front);
         //GL.FrontFace(FrontFaceDirection.CW);
-    }
 
-    private static void OnMouseClick(IMouse mouse, MouseButton button, Vector2 position)
-    {
-        //var pos = Scene.Objects.First().Value.Transform.CurrentPosition;
-        //GL.ReadPixels<int>((int)pos.X, (int)pos.Y, (uint)Window.FramebufferSize.X, (uint)Window.FramebufferSize.Y, PixelFormat.DepthStencil, PixelType.Int, out var pixels);
+        Console.WriteLine($"Rendering {Scenes.Select(x => x.Objects.Count).Sum()} objects in total of {Scenes.Count} scenes");
     }
 
     private void OnUpdate(double deltaTime)
@@ -187,7 +198,7 @@ internal class App
             }
         }
 
-        Scene.UpdateObjects(deltaTime);
+        ActiveScene?.UpdateObjects((float)deltaTime);
     }
 
     private void OnRender(double deltaTime)
@@ -203,7 +214,7 @@ internal class App
             ImGuiNET.ImGui.Checkbox("VSync", ref VSync);
         }
 
-        Scene.Draw();
+        ActiveScene?.Draw();
 
         ImGuiController.Render();
     }
@@ -214,7 +225,29 @@ internal class App
         Console.WriteLine($"New resolution: {newSize.X}x{newSize.Y}");
     }
 
-    private void OnKeyDown(IKeyboard keyboard, Key key, int arg3)
+
+    #region Input handling
+
+    private void OnMouseMove(IMouse mouse, Vector2 position)
+    {
+        MouseMove?.Invoke(mouse, position);
+    }
+
+    private void OnMouseScroll(IMouse mouse, ScrollWheel args)
+    {
+        Console.WriteLine($"Mouse scroll {args.X}x{args.Y}");
+        MouseScroll?.Invoke(mouse, (byte)args.Y);
+    }
+
+    private void OnMouseClick(IMouse mouse, MouseButton button, Vector2 position)
+    {
+        //var pos = Scene.Objects.First().Value.CurrentPosition;
+        //GL.ReadPixels<int>((int)pos.X, (int)pos.Y, (uint)Window.FramebufferSize.X, (uint)Window.FramebufferSize.Y, PixelFormat.DepthStencil, PixelType.Int, out var pixels);
+
+        MouseClick?.Invoke(mouse, position);
+    }
+
+    private void OnKeyDown(IKeyboard keyboard, Key key, int code)
     {
         switch (key)
         {
@@ -222,13 +255,21 @@ internal class App
                 Window.Close();
                 break;
         }
+
+        KeyDown?.Invoke(keyboard, key);
     }
 
-    private static void OnClose()
-    {
-        Console.WriteLine("gg");
+    #endregion
 
-        Scene.Dispose();
+    private void OnClose()
+    {
+        Console.WriteLine("GG");
+
+        foreach (var scene in Scenes)
+        {
+            scene.Dispose();
+        }
+
         GL.Dispose();
     }
 }

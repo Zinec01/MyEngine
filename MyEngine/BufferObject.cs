@@ -1,25 +1,24 @@
 ﻿using Silk.NET.OpenGL;
 
-namespace MyEngine
+namespace MyEngine;
+
+internal class BufferObject<TDataType> : IDisposable where TDataType : unmanaged
 {
-    internal class BufferObject<TDataType> : IDisposable where TDataType : unmanaged
+    private uint Id { get; }
+
+    public unsafe BufferObject(ReadOnlySpan<TDataType> data, BufferTargetARB bufferType, BufferUsageARB bufferUsage = BufferUsageARB.StaticDraw)
     {
-        private uint Id { get; }
+        Id = Game.GL.GenBuffer();
+        Game.GL.BindBuffer(bufferType, Id);
 
-        public unsafe BufferObject(ReadOnlySpan<TDataType> data, BufferTargetARB bufferType, BufferUsageARB bufferUsage = BufferUsageARB.StaticDraw)
+        fixed (void* dataPtr = &data[0])
         {
-            Id = App.GL.GenBuffer();
-            App.GL.BindBuffer(bufferType, Id);
-
-            fixed (void* dataPtr = &data[0])
-            {
-                App.GL.BufferData(bufferType, (nuint)(data.Length * sizeof(TDataType)), dataPtr, bufferUsage);
-            }
+            Game.GL.BufferData(bufferType, (nuint)(data.Length * sizeof(TDataType)), dataPtr, bufferUsage);
         }
+    }
 
-        public void Dispose()
-        {
-            App.GL.DeleteBuffer(Id);
-        }
+    public void Dispose()
+    {
+        Game.GL.DeleteBuffer(Id);
     }
 }
