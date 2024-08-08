@@ -5,20 +5,24 @@ namespace MyEngine;
 
 internal class ShaderProgram : IDisposable
 {
+    private readonly GL _gl;
+
     private uint Id { get; }
     private IList<Shader> Shaders { get; } = [];
 
     public bool IsLinked { get; private set; } = false;
 
-    public ShaderProgram(Shader vertex, Shader fragment)
+    public ShaderProgram(GL gl, Shader vertex, Shader fragment)
     {
-        Id = Game.GL.CreateProgram();
+        _gl = gl;
+
+        Id = gl.CreateProgram();
         Shaders.Add(vertex);
         Shaders.Add(fragment);
     }
 
-    public ShaderProgram(string vertexPath, string fragmentPath)
-        : this(new Shader(vertexPath, ShaderType.VertexShader), new Shader(fragmentPath, ShaderType.FragmentShader))
+    public ShaderProgram(GL gl, string vertexPath, string fragmentPath)
+        : this(gl, new Shader(gl, vertexPath, ShaderType.VertexShader), new Shader(gl, fragmentPath, ShaderType.FragmentShader))
     {
     }
 
@@ -41,12 +45,12 @@ internal class ShaderProgram : IDisposable
             shader.Attach(Id);
         }
 
-        Game.GL.LinkProgram(Id);
+        _gl.LinkProgram(Id);
 
-        Game.GL.GetProgram(Id, GLEnum.LinkStatus, out var status);
+        _gl.GetProgram(Id, GLEnum.LinkStatus, out var status);
         if (status == 0)
         {
-            var info = Game.GL.GetProgramInfoLog(Id);
+            var info = _gl.GetProgramInfoLog(Id);
             Console.WriteLine($"Error linking Shader Program: {info}");
 
             Environment.Exit(0);
@@ -64,33 +68,33 @@ internal class ShaderProgram : IDisposable
     {
         var location = GetUniformLocation(name);
 
-        Game.GL.Uniform1(location, value);
+        _gl.Uniform1(location, value);
     }
 
     public void SetUniform(string name, float value)
     {
         var location = GetUniformLocation(name);
 
-        Game.GL.Uniform1(location, value);
+        _gl.Uniform1(location, value);
     }
 
     public void SetUniform(string name, Vector3 value)
     {
         var location = GetUniformLocation(name);
 
-        Game.GL.Uniform3(location, value);
+        _gl.Uniform3(location, value);
     }
 
     public unsafe void SetUniform(string name, Matrix4x4 value)
     {
         var location = GetUniformLocation(name);
 
-        Game.GL.UniformMatrix4(location, 1, false, (float*)&value);
+        _gl.UniformMatrix4(location, 1, false, (float*)&value);
     }
 
     private int GetUniformLocation(string name)
     {
-        var location = Game.GL.GetUniformLocation(Id, name);
+        var location = _gl.GetUniformLocation(Id, name);
         if (location < 0)
         {
             Console.WriteLine($"Shader variable {name} not found");
@@ -103,11 +107,11 @@ internal class ShaderProgram : IDisposable
 
     public void Use()
     {
-        Game.GL.UseProgram(Id);
+        _gl.UseProgram(Id);
     }
 
     public void Dispose()
     {
-        Game.GL.DeleteProgram(Id);
+        _gl.DeleteProgram(Id);
     }
 }

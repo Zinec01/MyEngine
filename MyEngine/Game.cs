@@ -1,32 +1,40 @@
 ﻿using Silk.NET.Input;
 using Silk.NET.Maths;
-using Silk.NET.OpenGL.Extensions.ImGui;
 using Silk.NET.OpenGL;
-using System.Numerics;
+using Silk.NET.OpenGL.Extensions.ImGui;
 using Silk.NET.Windowing;
+using System.Numerics;
 
 namespace MyEngine;
 
 internal class Game
 {
-    public static GL GL { get; private set; }
+    private GL GL { get; set; }
     private IWindow Window { get; set; }
     private IInputContext InputContext { get; set; }
     private ImGuiController ImGuiController { get; set; }
 
-    public static int FPS { get; private set; }
-    private static bool VSync;
-    public static DateTime Start { get; private set; }
+    private bool VSync;
+    public int FPS { get; private set; }
+    public DateTime Start { get; private set; }
 
+    private uint _activeSceneId = 0;
     private List<Scene> Scenes { get; } = [];
-    private int _activeSceneID = 0;
 
-    private Scene? ActiveScene => Scenes.FirstOrDefault(x => x.Id == _activeSceneID);
+    public Scene? ActiveScene
+    {
+        get => Scenes.FirstOrDefault(x => x.Id == _activeSceneId);
+        set
+        {
+            if (value != null)
+                _activeSceneId = value.Id;
+        }
+    }
 
-    public static event EventHandler<byte> MouseScroll;
-    public static event EventHandler<Vector2> MouseClick;
-    public static event EventHandler<Vector2> MouseMove;
-    public static event EventHandler<Key> KeyDown;
+    public event EventHandler<byte> MouseScroll;
+    public event EventHandler<Vector2> MouseClick;
+    public event EventHandler<Vector2> MouseMove;
+    public event EventHandler<Key> KeyDown;
 
 
     public Game(int width, int height, string name)
@@ -152,23 +160,23 @@ internal class Game
             }
         };
 
-        var pyramid = new Model(pyramidVerts, pyramidInds, @"..\..\..\Textures\obama.jpg");
+        var pyramid = new Model(pyramidVerts, pyramidInds, @"..\..\..\Textures\obama.jpg", GL);
         pyramid.SetScale(0.25f);
         pyramid.SetPosition(new Vector3(0.5f, 0, 0));
         //pyramid.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, 1f));
 
         pyramid.PermanentTransform += transformAction;
 
-        var triangle = new Model(triangleVerts, triangleInds, @"..\..\..\Textures\obama.jpg");
+        var triangle = new Model(triangleVerts, triangleInds, @"..\..\..\Textures\obama.jpg", GL);
         triangle.SetScale(0.25f);
         triangle.SetPosition(new Vector3(-0.5f, 0, 0));
         triangle.PermanentTransform += transformAction;
 
-        var square = new Model(squareVerts, squareInds, @"..\..\..\Textures\obama.jpg");
+        var square = new Model(squareVerts, squareInds, @"..\..\..\Textures\obama.jpg", GL);
         square.SetScale(0.25f);
         square.PermanentTransform += transformAction;
 
-        var scene = new Scene();
+        var scene = new Scene(GL);
         scene.Objects.Add(pyramid);
         scene.Objects.Add(triangle);
         scene.Objects.Add(square);
@@ -219,7 +227,7 @@ internal class Game
         ImGuiController.Render();
     }
 
-    private static void OnFramebufferResize(Vector2D<int> newSize)
+    private void OnFramebufferResize(Vector2D<int> newSize)
     {
         GL.Viewport(newSize);
         Console.WriteLine($"New resolution: {newSize.X}x{newSize.Y}");

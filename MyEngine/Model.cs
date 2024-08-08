@@ -6,7 +6,9 @@ namespace MyEngine;
 
 internal class Model : IDisposable, IMovable
 {
+    private readonly GL _gl;
     private static uint _idCounter = 0;
+
     public uint Id { get; }
 
     private IReadOnlyCollection<float> Vertices { get; }
@@ -20,34 +22,36 @@ internal class Model : IDisposable, IMovable
     public event EventHandler<float> PermanentTransform;
     public event EventHandler<ObjectChangedFlag> Moved;
 
-    public Model(float[] vertices, int[] indices)
+    public Model(GL gl, float[] vertices, int[] indices)
     {
+        _gl = gl;
         Id = _idCounter++;
 
         Vertices = vertices;
         Indices = indices;
-        VAO = new VAO();
-        VBO = new BufferObject<float>(vertices, BufferTargetARB.ArrayBuffer);
-        EBO = new BufferObject<int>(indices, BufferTargetARB.ElementArrayBuffer);
+        VAO = new VAO(_gl);
+        VBO = new BufferObject<float>(gl, vertices, BufferTargetARB.ArrayBuffer, BufferUsageARB.StaticDraw);
+        EBO = new BufferObject<int>(gl, indices, BufferTargetARB.ElementArrayBuffer, BufferUsageARB.StaticDraw);
         Transform = new Transform();
+        TexGreen = new Texture(gl, @"..\..\..\Textures\green.png");
 
         SetupVertexAttribs();
     }
 
-    public Model(float[] vertices, int[] indices, string texturePath) : this(vertices, indices)
+    public Model(float[] vertices, int[] indices, string texturePath, GL gl) : this(gl, vertices, indices)
     {
-        Texture = new Texture(texturePath);
+        Texture = new Texture(gl, texturePath);
     }
 
-    public static unsafe void SetupVertexAttribs()
+    public unsafe void SetupVertexAttribs()
     {
-        Game.GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, (uint)sizeof(float) * 5, null);
-        Game.GL.EnableVertexAttribArray(0);
+        _gl.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, (uint)sizeof(float) * 5, null);
+        _gl.EnableVertexAttribArray(0);
 
         //if (Texture != null)
         //{
-            Game.GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, (uint)sizeof(float) * 5, (void*)(sizeof(float) * 3));
-            Game.GL.EnableVertexAttribArray(1);
+            _gl.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, (uint)sizeof(float) * 5, (void*)(sizeof(float) * 3));
+            _gl.EnableVertexAttribArray(1);
         //}
     }
 
@@ -57,9 +61,10 @@ internal class Model : IDisposable, IMovable
         Transform.Update(deltaTime * 5);
     }
 
-    private Texture TexGreen { get; } = new(@"..\..\..\Textures\green.png");
+    private Texture TexGreen { get; }
 
     public Vector3 Position => Transform.CurrentPosition;
+    public Quaternion Rotation => Transform.CurrentRotation;
 
     public unsafe void Draw(ShaderProgram program)
     {
@@ -74,7 +79,7 @@ internal class Model : IDisposable, IMovable
             program.SetUniform(Shader.TextureSampler, 0);
         }
 
-        Game.GL.DrawElements(PrimitiveType.Triangles, (uint)Indices.Count, DrawElementsType.UnsignedInt, null);
+        _gl.DrawElements(PrimitiveType.Triangles, (uint)Indices.Count, DrawElementsType.UnsignedInt, null);
 
 
         //Green triangle edge lines
@@ -83,15 +88,15 @@ internal class Model : IDisposable, IMovable
 
         Transform.SetScale(origScale * 1.01f);
         program.SetUniform(Shader.ModelMatrix, Transform.ModelMat);
-        Game.GL.DrawElements(PrimitiveType.LineStrip, (uint)Indices.Count + 1, DrawElementsType.UnsignedInt, null);
+        _gl.DrawElements(PrimitiveType.LineStrip, (uint)Indices.Count + 1, DrawElementsType.UnsignedInt, null);
 
         Transform.SetScale(origScale * 1.03f);
         program.SetUniform(Shader.ModelMatrix, Transform.ModelMat);
-        Game.GL.DrawElements(PrimitiveType.LineStrip, (uint)Indices.Count + 1, DrawElementsType.UnsignedInt, null);
+        _gl.DrawElements(PrimitiveType.LineStrip, (uint)Indices.Count + 1, DrawElementsType.UnsignedInt, null);
 
         Transform.SetScale(origScale * 1.05f);
         program.SetUniform(Shader.ModelMatrix, Transform.ModelMat);
-        Game.GL.DrawElements(PrimitiveType.LineStrip, (uint)Indices.Count + 1, DrawElementsType.UnsignedInt, null);
+        _gl.DrawElements(PrimitiveType.LineStrip, (uint)Indices.Count + 1, DrawElementsType.UnsignedInt, null);
 
         Transform.SetScale(origScale);
     }
@@ -110,13 +115,12 @@ internal class Model : IDisposable, IMovable
         VAO.Dispose();
     }
 
-    public void SubscribeTo(IMovable @object)
+    public void SubscribeTo(IMovable @object, Action<IMovable, ObjectChangedFlag> updateAction)
     {
-        @object.Moved += OnSubscribedObjectMoved;
-    }
-
-    private void OnSubscribedObjectMoved(object? sender, ObjectChangedFlag e)
-    {
-
+        @object.Moved += (sender, flags) =>
+        {
+            if (sender is IMovable obj)
+                updateAction?.Invoke(obj, flags);
+        };
     }
 }

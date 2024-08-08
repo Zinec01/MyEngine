@@ -1,22 +1,28 @@
-﻿namespace MyEngine;
+﻿using Silk.NET.OpenGL;
+
+namespace MyEngine;
 
 internal class VAO : IDisposable
 {
+    private readonly GL _gl;
+
     private uint Id { get; }
 
-    public VAO()
+    public VAO(GL gl)
     {
-        Id = Game.GL.GenVertexArray();
+        _gl = gl;
+
+        Id = gl.GenVertexArray();
         Bind();
     }
 
     public void Bind()
     {
-        Game.GL.BindVertexArray(Id);
+        _gl.BindVertexArray(Id);
     }
 
     public void Dispose()
     {
-        Game.GL.DeleteVertexArray(Id);
+        _gl.DeleteVertexArray(Id);
     }
 }

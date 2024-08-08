@@ -1,7 +1,11 @@
-﻿namespace MyEngine;
+﻿using Silk.NET.OpenGL;
+
+namespace MyEngine;
 
 internal class Scene : IDisposable
 {
+    private readonly GL _gl;
+
     private static uint _idCounter = 0;
     public uint Id { get; }
 
@@ -9,8 +13,9 @@ internal class Scene : IDisposable
     private ShaderProgram ShaderProgram { get; }
     public Camera Camera { get; private set; }
 
-    public Scene()
+    public Scene(GL gl)
     {
+        _gl = gl;
         Id = _idCounter++;
 
         //var shaders = new List<Shader>();
@@ -27,7 +32,7 @@ internal class Scene : IDisposable
 
         Camera = new Camera();
 
-        ShaderProgram = new ShaderProgram(@"..\..\..\Shaders\basic.vert", @"..\..\..\Shaders\basic.frag");
+        ShaderProgram = new ShaderProgram(gl, @"..\..\..\Shaders\basic.vert", @"..\..\..\Shaders\basic.frag");
 
         // TODO: Move shader program out of scene and make them static to use freely with models
 
@@ -61,8 +66,8 @@ internal class Scene : IDisposable
 
         foreach (var model in Objects)
         {
-            //Application.GL.StencilFunc(Silk.NET.OpenGL.StencilFunction.Always, kvp.Key, 0xFF);
-            //Application.GL.StencilOp(Silk.NET.OpenGL.StencilOp.Keep, Silk.NET.OpenGL.StencilOp.Replace, Silk.NET.OpenGL.StencilOp.Replace);
+            //Game.GL.StencilFunc(Silk.NET.OpenGL.StencilFunction.Always, (int)model.Id, 0xFF);
+            //Game.GL.StencilOp(Silk.NET.OpenGL.StencilOp.Keep, Silk.NET.OpenGL.StencilOp.Replace, Silk.NET.OpenGL.StencilOp.Replace);
 
             model.Draw(ShaderProgram);
         }
