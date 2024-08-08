@@ -2,13 +2,22 @@
 
 namespace MyEngine;
 
-internal class Transform
+internal abstract class Transform
 {
-    private Vector3 TargetPosition { get; set; }
+    protected Vector3 TargetPosition { get; set; }
+    public Vector3 CurrentPosition { get; set; }
+}
+
+internal class CameraTransform : Transform
+{
+
+}
+
+internal class ObjectTransform : Transform
+{
     private float TargetScale { get; set; }
     private Quaternion TargetRotation { get; set; }
 
-    public Vector3 CurrentPosition { get; private set; } = new(0, 0, 0);
     public float CurrentScale { get; private set; } = 1f;
     public Quaternion CurrentRotation { get; private set; } = Quaternion.Identity;
 
@@ -29,10 +38,10 @@ internal class Transform
 
     public bool TransformPending { get; private set; } = true;
 
-    public Transform()
+    public ObjectTransform()
     {
         TargetPosition = CurrentPosition;
-        TargetScale = CurrentScale;
+        TargetScale    = CurrentScale;
         TargetRotation = CurrentRotation;
     }
 

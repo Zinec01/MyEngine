@@ -9,13 +9,22 @@ public interface IMovable
 
     public event EventHandler<ObjectChangedFlag> Moved;
 
-    public void SubscribeTo(IMovable @object, Action<IMovable, ObjectChangedFlag> updateAction);
+    public void SubscribeTo(IMovable @object, Action<IMovable, ObjectChangedFlag> updateAction)
+    {
+        @object.Moved += (sender, flags) =>
+        {
+            if (sender is IMovable obj)
+                updateAction?.Invoke(obj, flags);
+        };
+    }
 }
 
 public enum ObjectChangedFlag
 {
-    POSITION,
-    ROTATION,
-    SCALE,
-    OPACITY
+    NONE = 1,
+    POSITION = 10,
+    ROTATION = 100,
+    SCALE = 1_000,
+    OPACITY = 10_000,
+    COLOR = 100_000
 }

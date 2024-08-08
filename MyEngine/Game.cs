@@ -176,6 +176,23 @@ internal class Game
         square.SetScale(0.25f);
         square.PermanentTransform += transformAction;
 
+        square.SubscribeTo(square, (obj, flag) =>
+        {
+            var changed = string.Empty;
+
+            //if (flag.HasFlag(Interfaces.ObjectChangedFlag.ROTATION))
+            //    changed += "rotation";
+
+            if (flag.HasFlag(Interfaces.ObjectChangedFlag.POSITION))
+                changed += (!string.IsNullOrEmpty(changed) ? ", " : string.Empty) + "position";
+
+            if (flag.HasFlag(Interfaces.ObjectChangedFlag.SCALE))
+                changed += (!string.IsNullOrEmpty(changed) ? ", " : string.Empty) + "scale";
+
+            if (!string.IsNullOrEmpty(changed))
+                Console.WriteLine($"Subsribed object changed: {changed}");
+        });
+
         var scene = new Scene(GL);
         scene.Objects.Add(pyramid);
         scene.Objects.Add(triangle);

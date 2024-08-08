@@ -16,7 +16,7 @@ internal class Model : IDisposable, IMovable
     private VAO VAO { get; }
     private BufferObject<float> VBO { get; }
     private BufferObject<int> EBO { get; }
-    private Transform Transform { get; }
+    private ObjectTransform Transform { get; }
     public Texture Texture { get; }
 
     public event EventHandler<float> PermanentTransform;
@@ -32,7 +32,7 @@ internal class Model : IDisposable, IMovable
         VAO = new VAO(_gl);
         VBO = new BufferObject<float>(gl, vertices, BufferTargetARB.ArrayBuffer, BufferUsageARB.StaticDraw);
         EBO = new BufferObject<int>(gl, indices, BufferTargetARB.ElementArrayBuffer, BufferUsageARB.StaticDraw);
-        Transform = new Transform();
+        Transform = new ObjectTransform();
         TexGreen = new Texture(gl, @"..\..\..\Textures\green.png");
 
         SetupVertexAttribs();
@@ -57,8 +57,29 @@ internal class Model : IDisposable, IMovable
 
     public void Update(float deltaTime)
     {
+        var position = Transform.CurrentPosition;
+        var rotation = Transform.CurrentRotation;
+        var scale    = Transform.CurrentScale;
+
         PermanentTransform?.Invoke(this, deltaTime);
         Transform.Update(deltaTime * 5);
+
+        var flags = ObjectChangedFlag.NONE;
+
+        if (position != Transform.CurrentPosition)
+            flags |= ObjectChangedFlag.POSITION;
+
+        if (rotation != Transform.CurrentRotation)
+            flags |= ObjectChangedFlag.ROTATION;
+
+        if (scale != Transform.CurrentScale)
+            flags |= ObjectChangedFlag.SCALE;
+
+        if (flags != ObjectChangedFlag.NONE)
+        {
+            flags &= ~ObjectChangedFlag.NONE;
+            Moved?.Invoke(this, flags);
+        }
     }
 
     private Texture TexGreen { get; }
