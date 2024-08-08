@@ -1,9 +1,10 @@
-﻿using Silk.NET.OpenGL;
+﻿using MyEngine.Interfaces;
+using Silk.NET.OpenGL;
 using System.Numerics;
 
 namespace MyEngine;
 
-internal class Model : IDisposable
+internal class Model : IDisposable, IMovable
 {
     private static uint _idCounter = 0;
     public uint Id { get; }
@@ -16,7 +17,8 @@ internal class Model : IDisposable
     private Transform Transform { get; }
     public Texture Texture { get; }
 
-    public event EventHandler<float> OnPermanentTransform;
+    public event EventHandler<float> PermanentTransform;
+    public event EventHandler<ObjectChangedFlag> Moved;
 
     public Model(float[] vertices, int[] indices)
     {
@@ -51,11 +53,13 @@ internal class Model : IDisposable
 
     public void Update(float deltaTime)
     {
-        OnPermanentTransform?.Invoke(this, deltaTime);
+        PermanentTransform?.Invoke(this, deltaTime);
         Transform.Update(deltaTime * 5);
     }
 
     private Texture TexGreen { get; } = new(@"..\..\..\Textures\green.png");
+
+    public Vector3 Position => Transform.CurrentPosition;
 
     public unsafe void Draw(ShaderProgram program)
     {
@@ -104,5 +108,15 @@ internal class Model : IDisposable
         VBO.Dispose();
         EBO.Dispose();
         VAO.Dispose();
+    }
+
+    public void SubscribeTo(IMovable @object)
+    {
+        @object.Moved += OnSubscribedObjectMoved;
+    }
+
+    private void OnSubscribedObjectMoved(object? sender, ObjectChangedFlag e)
+    {
+
     }
 }

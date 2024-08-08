@@ -21,6 +21,8 @@ internal class Camera
         Position = position;
         Target = target;
 
+        Direction = Vector3.Normalize(position - Target);
+
         ProjectMat = Matrix4x4.CreatePerspectiveFieldOfView(((float)FOV).DegToRad(), 1280f / 720f, 0.1f, 100f);
 
         var right = Vector3.Normalize(Vector3.Cross(new Vector3(0f, 1f, 0f), Direction));
@@ -28,7 +30,7 @@ internal class Camera
         ViewMat = Matrix4x4.CreateLookAt(position, target, up);
     }
 
-    public Camera() : this(new Vector3(0f, 0f, 3f), new Vector3(0f, 0f, 0f))
+    public Camera() : this(new Vector3(0f, 0f, 1f), new Vector3(0f, 0f, 0f))
     {
     }
 

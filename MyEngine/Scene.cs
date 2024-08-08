@@ -56,8 +56,8 @@ internal class Scene : IDisposable
     {
         ShaderProgram.Use();
 
-        ShaderProgram?.SetUniform(Shader.ProjectionMatrix, Camera.ProjectMat);
-        ShaderProgram?.SetUniform(Shader.ViewMatrix, Camera.ViewMat);
+        ShaderProgram.SetUniform(Shader.ProjectionMatrix, Camera.ProjectMat);
+        ShaderProgram.SetUniform(Shader.ViewMatrix, Camera.ViewMat);
 
         foreach (var model in Objects)
         {

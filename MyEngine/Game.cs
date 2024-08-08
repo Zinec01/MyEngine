@@ -10,7 +10,7 @@ namespace MyEngine;
 internal class Game
 {
     public static GL GL { get; private set; }
-    public IWindow Window { get; private set; }
+    private IWindow Window { get; set; }
     private IInputContext InputContext { get; set; }
     private ImGuiController ImGuiController { get; set; }
 
@@ -90,26 +90,26 @@ internal class Game
         var pyramidVerts = new[]
         {
              0f,  1f,  0f, 0.5f, 0f,
-            -1f, -1f,  1f,   1f, 1f,
-             1f, -1f,  1f,   0f, 1f,
-             1f, -1f, -1f,   0f, 1f,
-             1f, -1f, -1f,   1f, 1f,
             -1f, -1f, -1f,   0f, 1f,
-            -1f, -1f, -1f,   1f, 1f,
+             1f, -1f, -1f,   1f, 1f,
+             1f, -1f, -1f,   0f, 1f,
+             1f, -1f,  1f,   1f, 1f,
+             1f, -1f,  1f,   0f, 1f,
+            -1f, -1f,  1f,   1f, 1f,
             -1f, -1f,  1f,   0f, 1f,
+            -1f, -1f, -1f,   1f, 1f,
             -1f, -1f, -1f,   0f, 0f,
-             1f, -1f, -1f,   1f, 0f,
-             1f, -1f,  1f,   1f, 1f
+             1f, -1f, -1f,   1f, 0f
         };
 
         var pyramidInds = new[]
         {
              0, 1, 2,
-             0, 1, 3,
-             0, 4, 5,
-             0, 6, 7,
-             8, 9, 7,
-             7, 9, 10
+             0, 3, 4,
+             0, 5, 6,
+             0, 7, 8,
+             9, 7, 10,
+             10, 7, 4
         };
 
         var squareVerts = new[]
@@ -157,16 +157,16 @@ internal class Game
         pyramid.SetPosition(new Vector3(0.5f, 0, 0));
         //pyramid.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, 1f));
 
-        pyramid.OnPermanentTransform += transformAction;
+        pyramid.PermanentTransform += transformAction;
 
         var triangle = new Model(triangleVerts, triangleInds, @"..\..\..\Textures\obama.jpg");
         triangle.SetScale(0.25f);
         triangle.SetPosition(new Vector3(-0.5f, 0, 0));
-        triangle.OnPermanentTransform += transformAction;
+        triangle.PermanentTransform += transformAction;
 
         var square = new Model(squareVerts, squareInds, @"..\..\..\Textures\obama.jpg");
         square.SetScale(0.25f);
-        square.OnPermanentTransform += transformAction;
+        square.PermanentTransform += transformAction;
 
         var scene = new Scene();
         scene.Objects.Add(pyramid);
@@ -178,8 +178,8 @@ internal class Game
         GL.Enable(EnableCap.DepthTest);
         GL.Enable(EnableCap.CullFace);
         //GL.Enable(EnableCap.StencilTest);
-        GL.CullFace(TriangleFace.Front);
-        //GL.FrontFace(FrontFaceDirection.CW);
+        GL.CullFace(TriangleFace.Back);
+        GL.FrontFace(FrontFaceDirection.CW);
 
         Console.WriteLine($"Rendering {Scenes.Select(x => x.Objects.Count).Sum()} objects in total of {Scenes.Count} scenes");
     }
