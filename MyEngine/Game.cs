@@ -1,4 +1,5 @@
-﻿using Silk.NET.Input;
+﻿using MyEngine.Interfaces;
+using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.OpenGL.Extensions.ImGui;
@@ -10,7 +11,7 @@ namespace MyEngine;
 internal class Game
 {
     private GL GL { get; set; }
-    private IWindow Window { get; set; }
+    public IWindow Window { get; private set; }
     private IInputContext InputContext { get; set; }
     private ImGuiController ImGuiController { get; set; }
 
@@ -136,7 +137,7 @@ internal class Game
 
         EventHandler<float> transformAction = (sender, deltaTime) =>
         {
-            if (sender is not Model model) return;
+            if (sender is not GameObject model) return;
 
             model.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, (float)deltaTime / 2));
             model.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, (float)deltaTime / 2));
@@ -160,40 +161,33 @@ internal class Game
             }
         };
 
-        var pyramid = new Model(pyramidVerts, pyramidInds, @"..\..\..\Textures\obama.jpg", GL);
-        pyramid.SetScale(0.25f);
-        pyramid.SetPosition(new Vector3(0.5f, 0, 0));
+        var pyramid = new GameObject(pyramidVerts, pyramidInds, @"..\..\..\Textures\obama.jpg", GL);
+        //pyramid.SetScale(0.25f);
+        pyramid.SetPosition(new Vector3(3f, 0, 0));
         //pyramid.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, 1f));
-
         pyramid.PermanentTransform += transformAction;
 
-        var triangle = new Model(triangleVerts, triangleInds, @"..\..\..\Textures\obama.jpg", GL);
-        triangle.SetScale(0.25f);
-        triangle.SetPosition(new Vector3(-0.5f, 0, 0));
+        var triangle = new GameObject(triangleVerts, triangleInds, @"..\..\..\Textures\obama.jpg", GL);
+        //triangle.SetScale(0.25f);
+        triangle.SetPosition(new Vector3(-3f, 0, 0));
         triangle.PermanentTransform += transformAction;
 
-        var square = new Model(squareVerts, squareInds, @"..\..\..\Textures\obama.jpg", GL);
-        square.SetScale(0.25f);
-        square.PermanentTransform += transformAction;
-
-        square.SubscribeTo(square, (obj, flag) =>
+        var square = new GameObject(squareVerts, squareInds, @"..\..\..\Textures\obama.jpg", GL);
+        //square.SetScale(0.25f);
+        //square.PermanentTransform += transformAction;
+        square.Parent = triangle;
+        square.ParentObjectChanged += (sender, changeAction) =>
         {
-            var changed = string.Empty;
+            var parent = (ITransformable)sender!;
 
-            //if (flag.HasFlag(Interfaces.ObjectChangedFlag.ROTATION))
-            //    changed += "rotation";
+            if (changeAction.HasFlag(ObjectChangedFlag.ROTATION))
+                square.SetRotation(parent.CurrentRotation);
 
-            if (flag.HasFlag(Interfaces.ObjectChangedFlag.POSITION))
-                changed += (!string.IsNullOrEmpty(changed) ? ", " : string.Empty) + "position";
+            if (changeAction.HasFlag(ObjectChangedFlag.POSITION))
+                square.SetPosition(square.CurrentPosition + (parent.CurrentPosition - parent.PreviousPosition));
+        };
 
-            if (flag.HasFlag(Interfaces.ObjectChangedFlag.SCALE))
-                changed += (!string.IsNullOrEmpty(changed) ? ", " : string.Empty) + "scale";
-
-            if (!string.IsNullOrEmpty(changed))
-                Console.WriteLine($"Subsribed object changed: {changed}");
-        });
-
-        var scene = new Scene(GL);
+        var scene = new Scene(GL, Window, InputContext);
         scene.Objects.Add(pyramid);
         scene.Objects.Add(triangle);
         scene.Objects.Add(square);
@@ -223,7 +217,7 @@ internal class Game
             }
         }
 
-        ActiveScene?.UpdateObjects((float)deltaTime);
+        ActiveScene?.Update((float)deltaTime);
     }
 
     private void OnRender(double deltaTime)
@@ -260,7 +254,6 @@ internal class Game
 
     private void OnMouseScroll(IMouse mouse, ScrollWheel args)
     {
-        Console.WriteLine($"Mouse scroll {args.X}x{args.Y}");
         MouseScroll?.Invoke(mouse, (byte)args.Y);
     }
 

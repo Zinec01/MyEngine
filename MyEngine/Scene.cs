@@ -1,23 +1,22 @@
-﻿using Silk.NET.OpenGL;
+﻿using Silk.NET.Input;
+using Silk.NET.OpenGL;
+using Silk.NET.Windowing;
+using System.Numerics;
 
 namespace MyEngine;
 
 internal class Scene : IDisposable
 {
-    private readonly GL _gl;
-
     private static uint _idCounter = 0;
-    public uint Id { get; }
 
-    public List<Model> Objects { get; } = [];
+    public uint Id { get; } = _idCounter++;
+
+    public List<GameObject> Objects { get; } = [];
     private ShaderProgram ShaderProgram { get; }
     public Camera Camera { get; private set; }
 
-    public Scene(GL gl)
+    public Scene(GL gl, IWindow window, IInputContext inputContext)
     {
-        _gl = gl;
-        Id = _idCounter++;
-
         //var shaders = new List<Shader>();
         //foreach (var file in Directory.GetFiles(@"..\..\..\Shaders"))
         //{
@@ -30,7 +29,9 @@ internal class Scene : IDisposable
         //    }
         //}
 
-        Camera = new Camera();
+        Camera = new Camera((Vector2)window.FramebufferSize, inputContext);
+
+        window.FramebufferResize += newSize => Camera.ViewPort = (Vector2)newSize;
 
         ShaderProgram = new ShaderProgram(gl, @"..\..\..\Shaders\basic.vert", @"..\..\..\Shaders\basic.frag");
 
@@ -49,12 +50,14 @@ internal class Scene : IDisposable
         //}
     }
 
-    public void UpdateObjects(float deltaTime)
+    public void Update(float deltaTime)
     {
         foreach (var model in Objects)
         {
             model.Update(deltaTime);
         }
+
+        Camera.Update(deltaTime);
     }
 
     public void Draw()

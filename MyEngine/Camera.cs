@@ -1,48 +1,72 @@
-﻿using MyEngine.Interfaces;
+﻿using Silk.NET.Input;
 using System.Numerics;
 
 namespace MyEngine;
 
-internal class Camera : IMovable
+internal class Camera : CameraTransform
 {
-    public Matrix4x4 ProjectMat { get; private set; } = Matrix4x4.Identity;
-    public Matrix4x4 ViewMat { get; private set; } = Matrix4x4.Identity;
-    public Vector3 Position { get; private set; }
-    public Vector3 Target { get; private set; }
-    public Vector3 Direction { get; private set; }
-    public Quaternion Rotation => throw new NotImplementedException();
+    private const float _movementSpeed = 4f;
+    private const float _lookSensitivity = 0.1f;
 
-    public float Yaw { get; private set; }
-    public float Pitch { get; private set; }
+    private readonly IInputContext _inputContext;
+    private readonly IKeyboard _keyboard;
+    private readonly IMouse _mouse;
 
-    public float FOV { get; private set; } = 90;
+    private Vector2 _lastMousePos;
 
-    private CameraTransform Transform { get; }
-
-    public event EventHandler<ObjectChangedFlag> Moved;
-
-    public Camera(Vector3 position, Vector3 target, float fov = 90)
+    public Camera(Vector3 position, Vector3 target, Vector2 viewPort, IInputContext inputContext) : base(position, target, viewPort)
     {
-        Position = position;
-        Target = target;
-        FOV = fov;
+        _inputContext = inputContext;
 
-        Transform = new CameraTransform();
+        if (_inputContext.Keyboards.Count == 0)
+            throw new Exception("Bro just get a keyboard ???");
+        if (_inputContext.Mice.Count == 0)
+            throw new Exception("Bro just get a mouse ???");
 
-        Direction = Vector3.Normalize(position - Target);
+        _keyboard = inputContext.Keyboards[0];
+        _mouse = inputContext.Mice[0];
 
-        ProjectMat = Matrix4x4.CreatePerspectiveFieldOfView(fov.DegToRad(), 1280f / 720f, 0.1f, 100f);
-
-        var right = Vector3.Normalize(Vector3.Cross(new Vector3(0f, 1f, 0f), Direction));
-        var up = Vector3.Cross(Direction, right);
-        ViewMat = Matrix4x4.CreateLookAt(position, target, up);
+        _lastMousePos = _mouse.Position;
     }
 
-    public Camera() : this(new Vector3(0f, 0f, 1f), new Vector3(0f, 0f, 0f))
+    public Camera(Vector2 viewPort, IInputContext inputContext) : this(new Vector3(0f, 0f, 3f), new Vector3(0f, 0f, -1f), viewPort, inputContext)
     {
     }
 
-    public void Update(Vector3? position = null, Vector3? target = null, float? yaw = null, float? pitch = null)
+    public override void Update(float deltaTime)
+    {
+        var velocity = deltaTime * _movementSpeed;
+
+        HandleKeyboardInput(velocity);
+
+        HandleMouseInput(velocity);
+
+        base.Update(velocity);
+    }
+
+    private void HandleKeyboardInput(float velocity)
+    {
+        if (_keyboard.IsKeyPressed(Key.ShiftLeft))
+            velocity *= 2f;
+
+        var moveDir = Vector3.Zero;
+        if (_keyboard.IsKeyPressed(Key.W))
+            moveDir += Target;
+
+        if (_keyboard.IsKeyPressed(Key.S))
+            moveDir -= Target;
+
+        if (_keyboard.IsKeyPressed(Key.A))
+            moveDir -= Vector3.Normalize(Vector3.Cross(Target, Up));
+
+        if (_keyboard.IsKeyPressed(Key.D))
+            moveDir += Vector3.Normalize(Vector3.Cross(Target, Up));
+
+        if (moveDir != Vector3.Zero)
+            Move(Vector3.Normalize(moveDir) * velocity);
+    }
+
+    private void HandleMouseInput(float velocity)
     {
 
     }
