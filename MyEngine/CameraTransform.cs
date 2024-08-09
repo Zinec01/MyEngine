@@ -2,7 +2,7 @@
 
 namespace MyEngine;
 
-internal class CameraTransform : TransformObject
+internal class CameraTransform
 {
     private float _fov = 90;
     private Vector2 _viewPort;
@@ -13,8 +13,8 @@ internal class CameraTransform : TransformObject
     private Matrix4x4 _projectMat = Matrix4x4.Identity;
     private Matrix4x4 _viewMat = Matrix4x4.Identity;
 
-    public override event EventHandler OnPositionChanged;
-    public override event EventHandler OnRotationChanged;
+    public event EventHandler OnPositionChanged;
+    public event EventHandler OnRotationChanged;
 
     public Vector3 Target
     {
@@ -23,6 +23,7 @@ internal class CameraTransform : TransformObject
         {
             _target = value;
             DirectionToCamera = Vector3.Normalize(CurrentPosition - value);
+            ViewTransformPending = true;
         }
     }
     public Vector3 DirectionToCamera { get; private set; }
@@ -60,8 +61,12 @@ internal class CameraTransform : TransformObject
         }
     }
 
-    public float Yaw { get; private set; } = -90f;
-    public float Pitch { get; private set; } = 0f;
+    public Vector3 PreviousPosition { get; protected set; }
+    public Vector3 TargetPosition { get; protected set; }
+    public Vector3 CurrentPosition { get; protected set; }
+
+    public float Yaw { get; protected set; } = -90f;
+    public float Pitch { get; protected set; } = 0f;
 
     public float FOV
     {
@@ -75,7 +80,7 @@ internal class CameraTransform : TransformObject
     public Vector2 ViewPort
     {
         get => _viewPort;
-        set
+        protected set
         {
             _viewPort = value;
             ProjectTransformPending = true;
@@ -103,14 +108,13 @@ internal class CameraTransform : TransformObject
     public bool ViewTransformPending { get; private set; } = true;
     public bool ProjectTransformPending { get; private set; } = true;
 
-    public CameraTransform(Vector3 position, Vector3 target, Vector2 viewPort)
+    public CameraTransform(Vector3 position, Vector3 target)
     {
         PreviousPosition = CurrentPosition = TargetPosition = position;
         Target = target;
-        ViewPort = viewPort;
     }
 
-    public override void Update(float deltaTime)
+    public virtual void Update(float deltaTime)
     {
         if (CurrentPosition != TargetPosition)
         {
@@ -122,6 +126,14 @@ internal class CameraTransform : TransformObject
         }
     }
 
-    public override void ChangeScale(float scale) { }
-    public override void SetScale(float scale) { }
+    public virtual void Move(Vector3 position)
+    {
+        TargetPosition += position;
+    }
+
+    public void SetPosition(Vector3 position)
+    {
+        CurrentPosition = TargetPosition = position;
+        ViewTransformPending = true;
+    }
 }

@@ -1,7 +1,6 @@
 ﻿using Silk.NET.Input;
 using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
-using System.Numerics;
 
 namespace MyEngine;
 
@@ -29,9 +28,7 @@ internal class Scene : IDisposable
         //    }
         //}
 
-        Camera = new Camera((Vector2)window.FramebufferSize, inputContext);
-
-        window.FramebufferResize += newSize => Camera.ViewPort = (Vector2)newSize;
+        Camera = new Camera(window, inputContext);
 
         ShaderProgram = new ShaderProgram(gl, @"..\..\..\Shaders\basic.vert", @"..\..\..\Shaders\basic.frag");
 
@@ -64,8 +61,7 @@ internal class Scene : IDisposable
     {
         ShaderProgram.Use();
 
-        ShaderProgram.SetUniform(Shader.ProjectionMatrix, Camera.ProjectMat);
-        ShaderProgram.SetUniform(Shader.ViewMatrix, Camera.ViewMat);
+        Camera.ApplyChanges(ShaderProgram);
 
         foreach (var model in Objects)
         {

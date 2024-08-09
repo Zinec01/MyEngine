@@ -65,6 +65,18 @@ internal class Game
         Console.WriteLine("Hello there");
 
         InputContext = Window.CreateInput();
+
+        if (InputContext.Keyboards.Count == 0)
+        {
+            Console.WriteLine("Bro just get a keyboard ???");
+            Environment.Exit(0);
+        }
+        if (InputContext.Mice.Count == 0)
+        {
+            Console.WriteLine("Bro just get a mouse ???");
+            Environment.Exit(0);
+        }
+
         foreach (var keyboard in InputContext.Keyboards)
         {
             keyboard.KeyDown += OnKeyDown;
@@ -79,8 +91,6 @@ internal class Game
         Window.Center();
 
         GL = GL.GetApi(Window);
-
-        //Console.WriteLine("VSync " + (Window.VSync ? "ON" : "OFF"));
 
         ImGuiController = new ImGuiController(GL, Window, InputContext);
 
@@ -208,7 +218,6 @@ internal class Game
         if (DateTime.Now.Millisecond % 250 < 10)
         {
             FPS = (int)(1 / deltaTime);
-            //Console.WriteLine($"{FPS} FPS");
 
             if (Window.VSync != VSync)
             {
@@ -232,7 +241,7 @@ internal class Game
             ImGuiNET.ImGui.Text($"{FPS} FPS");
             ImGuiNET.ImGui.Checkbox("VSync", ref VSync);
         }
-
+        
         ActiveScene?.Draw();
 
         ImGuiController.Render();
