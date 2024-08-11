@@ -4,10 +4,6 @@ namespace MyEngine;
 
 internal class GameObjectTransform : TransformObject
 {
-    public override event EventHandler OnPositionChanged;
-    public override event EventHandler OnRotationChanged;
-    public override event EventHandler OnScaleChanged;
-
     public bool ModelTransformPending { get; private set; } = true;
 
     private Matrix4x4 modelMat = Matrix4x4.Identity;
@@ -25,60 +21,51 @@ internal class GameObjectTransform : TransformObject
         }
     }
 
-    public override void Update(float deltaTime)
+    protected override void OnCurrentToTargetPositionTransition(float deltaTime)
     {
-        if (CurrentPosition != TargetPosition)
-        {
-            PreviousPosition = CurrentPosition;
-            CurrentPosition = Vector3.Lerp(CurrentPosition, TargetPosition, deltaTime);
-
-            OnPositionChanged?.Invoke(this, System.EventArgs.Empty);
-            ModelTransformPending = true;
-        }
-        if (CurrentRotation != TargetRotation)
-        {
-            PreviousRotation = CurrentRotation;
-            CurrentRotation = Quaternion.Slerp(CurrentRotation, TargetRotation, deltaTime);
-
-            OnRotationChanged?.Invoke(this, System.EventArgs.Empty);
-            ModelTransformPending = true;
-        }
-        if (CurrentScale != TargetScale)
-        {
-            PreviousScale = CurrentScale;
-            CurrentScale = CurrentScale.Lerp(TargetScale, deltaTime);
-
-            OnScaleChanged?.Invoke(this, System.EventArgs.Empty);
-            ModelTransformPending = true;
-        }
+        base.OnCurrentToTargetPositionTransition(deltaTime);
+        ModelTransformPending = true;
     }
 
-    public virtual void Rotate(Quaternion rotation, Vector3 rotateAround)
+    protected override void OnCurrentToTargetRotationTransition(float deltaTime)
     {
-        TargetRotation *= rotation;
+        base.OnCurrentToTargetRotationTransition(deltaTime);
+        ModelTransformPending = true;
     }
 
-    public virtual void SetRotation(Quaternion rotation, Vector3 rotateAround)
+    protected override void OnCurrentToTargetScaleTransition(float deltaTime)
     {
-        CurrentRotation = TargetRotation = rotation;
+        base.OnCurrentToTargetScaleTransition(deltaTime);
         ModelTransformPending = true;
     }
 
     public override void SetPosition(Vector3 position)
     {
-        base.SetPosition(position);
+        CurrentPosition = TargetPosition = position;
+        ModelTransformPending = true;
+    }
+
+    //TODO rotation around a point
+    public void Rotate(Quaternion rotation, Vector3 rotateAround)
+    {
+        TargetRotation *= rotation;
+    }
+
+    public void SetRotation(Quaternion rotation, Vector3 rotateAround)
+    {
+        CurrentRotation = TargetRotation = rotation;
         ModelTransformPending = true;
     }
 
     public override void SetRotation(Quaternion rotation)
     {
-        base.SetRotation(rotation);
+        CurrentRotation = TargetRotation = rotation;
         ModelTransformPending = true;
     }
 
     public override void SetScale(float scale)
     {
-        base.SetScale(scale);
+        CurrentScale = TargetScale = scale;
         ModelTransformPending = true;
     }
 }

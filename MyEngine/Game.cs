@@ -4,12 +4,15 @@ using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.OpenGL.Extensions.ImGui;
 using Silk.NET.Windowing;
+using System.Drawing;
 using System.Numerics;
 
 namespace MyEngine;
 
 internal class Game
 {
+    public Color BackgroundColor { get; set; }
+
     private GL GL { get; set; }
     public IWindow Window { get; private set; }
     private IInputContext InputContext { get; set; }
@@ -94,6 +97,8 @@ internal class Game
 
         ImGuiController = new ImGuiController(GL, Window, InputContext);
 
+        BackgroundColor = Color.FromArgb(255, 18, 3, 5);
+
         Start = DateTime.Now;
         VSync = Window.VSync;
 
@@ -155,37 +160,40 @@ internal class Game
 
             if (InputContext.Keyboards[0].IsKeyPressed(Key.Left))
             {
-                model.Move(new Vector3((float)-deltaTime, 0, 0));
+                model.MoveBy(new Vector3((float)-deltaTime, 0, 0));
             }
             if (InputContext.Keyboards[0].IsKeyPressed(Key.Right))
             {
-                model.Move(new Vector3((float)deltaTime, 0, 0));
+                model.MoveBy(new Vector3((float)deltaTime, 0, 0));
             }
             if (InputContext.Keyboards[0].IsKeyPressed(Key.Up))
             {
-                model.Move(new Vector3(0, (float)deltaTime, 0));
+                model.MoveBy(new Vector3(0, (float)deltaTime, 0));
             }
             if (InputContext.Keyboards[0].IsKeyPressed(Key.Down))
             {
-                model.Move(new Vector3(0, (float)-deltaTime, 0));
+                model.MoveBy(new Vector3(0, (float)-deltaTime, 0));
             }
         };
 
-        var pyramid = new GameObject(pyramidVerts, pyramidInds, @"..\..\..\Textures\obama.jpg", GL);
+        var pyramid = new GameObject(GL, pyramidVerts, pyramidInds, @"..\..\..\Textures\obama.jpg");
         //pyramid.SetScale(0.25f);
-        pyramid.SetPosition(new Vector3(3f, 0, 0));
+        pyramid.SetPosition(new Vector3(3f, 2f, 0));
         //pyramid.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, 1f));
         pyramid.PermanentTransform += transformAction;
 
-        var triangle = new GameObject(triangleVerts, triangleInds, @"..\..\..\Textures\obama.jpg", GL);
+        var triangle = new GameObject(GL, triangleVerts, triangleInds, @"..\..\..\Textures\obama.jpg");
         //triangle.SetScale(0.25f);
-        triangle.SetPosition(new Vector3(-3f, 0, 0));
+        triangle.SetPosition(new Vector3(-3f, 2f, 0));
         triangle.PermanentTransform += transformAction;
 
-        var square = new GameObject(squareVerts, squareInds, @"..\..\..\Textures\obama.jpg", GL);
+        var square = new GameObject(GL, squareVerts, squareInds, @"..\..\..\Textures\obama.jpg")
+        {
+            Parent = triangle
+        };
         //square.SetScale(0.25f);
+        square.SetPosition(new Vector3(0f, 2f, 0f));
         //square.PermanentTransform += transformAction;
-        square.Parent = triangle;
         square.ParentObjectChanged += (sender, changeAction) =>
         {
             var parent = (ITransformable)sender!;
@@ -197,10 +205,15 @@ internal class Game
                 square.SetPosition(square.CurrentPosition + (parent.CurrentPosition - parent.PreviousPosition));
         };
 
+        var floor = new GameObject(GL, squareVerts, squareInds, @"..\..\..\Textures\xd.png");
+        floor.SetRotation(Quaternion.CreateFromAxisAngle(Vector3.UnitX, -90f.DegToRad()));
+        floor.SetScale(10f);
+
         var scene = new Scene(GL, Window, InputContext);
         scene.Objects.Add(pyramid);
         scene.Objects.Add(triangle);
         scene.Objects.Add(square);
+        scene.Objects.Add(floor);
 
         Scenes.Add(scene);
 
@@ -233,7 +246,7 @@ internal class Game
     {
         ImGuiController.Update((float)deltaTime);
 
-        GL.ClearColor(0.07f, 0.01f, 0.02f, 1f);
+        GL.ClearColor(BackgroundColor);
         GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
         if (ImGuiNET.ImGui.Begin("Info"))
@@ -251,6 +264,12 @@ internal class Game
     {
         GL.Viewport(newSize);
         Console.WriteLine($"New resolution: {newSize.X}x{newSize.Y}");
+    }
+
+
+    public void MakeFullscreen()
+    {
+        Window.WindowState = WindowState.Fullscreen;
     }
 
 

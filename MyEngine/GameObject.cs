@@ -19,9 +19,9 @@ internal class GameObject : GameObjectTransform, ITransformable, IDisposable
             _parent = value;
             _parent._children.Add(this);
 
-            _parent.OnPositionChanged += (sender, args) => ParentObjectChanged?.Invoke(sender, ObjectChangedFlag.POSITION);
-            _parent.OnRotationChanged += (sender, args) => ParentObjectChanged?.Invoke(sender, ObjectChangedFlag.ROTATION);
-            _parent.OnScaleChanged += (sender, args) => ParentObjectChanged?.Invoke(sender, ObjectChangedFlag.SCALE);
+            _parent.PositionChanged += (sender, args) => ParentObjectChanged?.Invoke(sender, ObjectChangedFlag.POSITION);
+            _parent.RotationChanged += (sender, args) => ParentObjectChanged?.Invoke(sender, ObjectChangedFlag.ROTATION);
+            _parent.ScaleChanged += (sender, args) => ParentObjectChanged?.Invoke(sender, ObjectChangedFlag.SCALE);
         }
     }
 
@@ -54,7 +54,7 @@ internal class GameObject : GameObjectTransform, ITransformable, IDisposable
         SetupVertexAttribs();
     }
 
-    public GameObject(float[] vertices, int[] indices, string texturePath, GL gl) : this(gl, vertices, indices)
+    public GameObject(GL gl, float[] vertices, int[] indices, string texturePath) : this(gl, vertices, indices)
     {
         Texture = new Texture(gl, texturePath);
     }
