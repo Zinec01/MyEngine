@@ -14,9 +14,9 @@ public interface ITransformable
     public float CurrentScale { get; }
     public float TargetScale { get; }
 
-    public event EventHandler PositionChanged;
-    public event EventHandler RotationChanged;
-    public event EventHandler ScaleChanged;
+    public event EventHandler<float> PositionChanged;
+    public event EventHandler<float> RotationChanged;
+    public event EventHandler<float> ScaleChanged;
 }
 
 public enum ObjectChangedFlag

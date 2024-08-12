@@ -15,9 +15,9 @@ internal abstract class TransformObject : ITransformable
     public float TargetScale { get; protected set; } = 1f;
     public float CurrentScale { get; protected set; } = 1f;
 
-    public virtual event EventHandler PositionChanged;
-    public virtual event EventHandler RotationChanged;
-    public virtual event EventHandler ScaleChanged;
+    public virtual event EventHandler<float> PositionChanged;
+    public virtual event EventHandler<float> RotationChanged;
+    public virtual event EventHandler<float> ScaleChanged;
 
     public virtual void Update(float deltaTime)
     {
@@ -31,7 +31,7 @@ internal abstract class TransformObject : ITransformable
         if (CurrentPosition != TargetPosition)
         {
             OnCurrentToTargetPositionTransition(deltaTime);
-            PositionChanged?.Invoke(this, System.EventArgs.Empty);
+            PositionChanged?.Invoke(this, deltaTime);
         }
     }
 
@@ -40,7 +40,7 @@ internal abstract class TransformObject : ITransformable
         if (CurrentRotation != TargetRotation)
         {
             OnCurrentToTargetRotationTransition(deltaTime);
-            RotationChanged?.Invoke(this, System.EventArgs.Empty);
+            RotationChanged?.Invoke(this, deltaTime);
         }
     }
 
@@ -49,7 +49,7 @@ internal abstract class TransformObject : ITransformable
         if (CurrentScale != TargetScale)
         {
             OnCurrentToTargetScaleTransition(deltaTime);
-            ScaleChanged?.Invoke(this, System.EventArgs.Empty);
+            ScaleChanged?.Invoke(this, deltaTime);
         }
     }
 
@@ -93,7 +93,7 @@ internal abstract class TransformObject : ITransformable
 
     public virtual void SetRotation(Quaternion rotation)
     {
-        CurrentRotation = TargetRotation = rotation;
+        CurrentRotation =  TargetRotation = rotation;
     }
 
     public virtual void ChangeScale(float scale)

@@ -7,91 +7,95 @@ namespace MyEngine;
 internal class Camera : CameraTransform
 {
     private const float _movementSpeed = 4f;
-    private const float _lookSensitivity = 0.002f;
+    private const float _lookSensitivity = 0.1f;
 
-    private readonly IKeyboard _keyboard;
-    private readonly IMouse _mouse;
+    private readonly List<IKeyboard> _keyboards = [];
+    private IMouse? _mouse;
 
     private Vector2 _lastMousePos;
 
-    public Camera(Vector3 position, Vector3 target, IWindow window, IInputContext inputContext)
+    public Camera(Vector3 position, Vector3 target, IWindow window)
         : base(position, target)
     {
-        _keyboard = inputContext.Keyboards[0];
-        _mouse = inputContext.Mice[0];
-
-        _mouse.MouseMove += (sender, newPos) => HandleMouseInput(newPos);
         window.FramebufferResize += (newSize) => ViewPort = (Vector2)newSize;
-
         ViewPort = (Vector2)window.FramebufferSize;
     }
 
-    public Camera(IWindow window, IInputContext inputContext)
-        : this(new Vector3(0f, 2f, 3f), new Vector3(0f, 0f, -1f), window, inputContext)
+    public Camera(IWindow window)
+        : this(new Vector3(0f, 2f, 5f), new Vector3(0f, 0f, -1f), window)
     {
     }
 
-    public void ApplyChanges(ShaderProgram shaderProgram)
+    public void SendShaderData(ShaderProgram shaderProgram)
     {
-        if (ProjectTransformPending)
-            shaderProgram.SetUniform(Shader.ProjectionMatrix, ProjectMat);
-        if (ViewTransformPending)
-            shaderProgram.SetUniform(Shader.ViewMatrix, ViewMat);
+        shaderProgram.SetUniform(Shader.ProjectionMatrix, ProjectMat);
+        shaderProgram.SetUniform(Shader.ViewMatrix, ViewMat);
     }
 
     public override void Update(float deltaTime)
     {
         var velocity = deltaTime * _movementSpeed;
 
-        HandleKeyboardInput(velocity);
+        foreach (var keyboard in _keyboards)
+        {
+            HandleKeyboardInput(keyboard, velocity);
+        }
 
         base.Update(velocity);
     }
 
-    private void HandleKeyboardInput(float velocity)
+    private void HandleKeyboardInput(IKeyboard keyboard, float velocity)
     {
-        if (_keyboard.IsKeyPressed(Key.ShiftLeft))
+        if (keyboard.IsKeyPressed(Key.R))
+        {
+            SetPosition(new Vector3(0f, 2f, 3f));
+            Yaw = 0f;
+            Pitch = 0f;
+            SetRotation(Quaternion.Identity);
+            return;
+        }
+
+        if (keyboard.IsKeyPressed(Key.ShiftLeft))
             velocity *= 2f;
 
         var moveDir = Vector3.Zero;
-        if (_keyboard.IsKeyPressed(Key.W))
+        if (keyboard.IsKeyPressed(Key.W))
             moveDir += Target;
 
-        if (_keyboard.IsKeyPressed(Key.S))
+        if (keyboard.IsKeyPressed(Key.S))
             moveDir -= Target;
 
-        if (_keyboard.IsKeyPressed(Key.A))
+        if (keyboard.IsKeyPressed(Key.A))
             moveDir -= Right;
 
-        if (_keyboard.IsKeyPressed(Key.D))
+        if (keyboard.IsKeyPressed(Key.D))
             moveDir += Right;
 
-        if (_keyboard.IsKeyPressed(Key.Space))
+        if (keyboard.IsKeyPressed(Key.Space))
             moveDir -= Vector3.Cross(Target, Right);
 
-        if (_keyboard.IsKeyPressed(Key.ControlLeft))
+        if (keyboard.IsKeyPressed(Key.ControlLeft))
             moveDir += Vector3.Cross(Target, Right);
 
         if (moveDir != Vector3.Zero)
             MoveBy(Vector3.Normalize(moveDir) * velocity);
     }
 
-    private void HandleMouseInput(Vector2 position)
+    private void HandleMouseInput(object? sender, Vector2 position)
     {
-        //var position = _mouse.Position;
-        if (_mouse.IsButtonPressed(MouseButton.Left))
+        if (sender is not IMouse mouse) return;
+
+        if (mouse.IsButtonPressed(MouseButton.Left))
         {
-            _mouse.Cursor.CursorMode = CursorMode.Disabled;
+            mouse.Cursor.CursorMode = CursorMode.Disabled;
 
             if (position == _lastMousePos) return;
 
             var deltaX = position.X - _lastMousePos.X;
             var deltaY = position.Y - _lastMousePos.Y;
 
-            Yaw -= deltaX * _lookSensitivity;
-            Pitch -= deltaY * _lookSensitivity;
-            //if (Pitch >= 90f || Pitch <= -90f)
-            //    Pitch = float.Clamp(Pitch, -89f, 89f);
+            Yaw -= (deltaX * _lookSensitivity).DegToRad();
+            Pitch -= (deltaY * _lookSensitivity).DegToRad();
 
             _lastMousePos = position;
 
@@ -99,8 +103,29 @@ internal class Camera : CameraTransform
         }
         else
         {
-            _mouse.Cursor.CursorMode = CursorMode.Normal;
+            mouse.Cursor.CursorMode = CursorMode.Normal;
             _lastMousePos = position;
         }
     }
+
+    public void SubscribeToMouseMovement(IMouse mouse)
+    {
+        if (_mouse != null)
+        {
+            _mouse.MouseMove -= HandleMouseInput;
+        }
+
+        _mouse = mouse;
+        _mouse.MouseMove += HandleMouseInput;
+    }
+
+    public void SubscribeToKeyboardKeyPress(IKeyboard keyboard)
+    {
+        _keyboards.Add(keyboard);
+    }
+
+    public void UnsubscribeFromKeyboardKeyPress(IKeyboard keyboard)
+    {
+        _keyboards.Remove(keyboard);
+    } 
 }

@@ -1,5 +1,4 @@
-﻿using MyEngine.Interfaces;
-using System.Numerics;
+﻿using System.Numerics;
 
 namespace MyEngine;
 
@@ -13,10 +12,6 @@ internal class CameraTransform : TransformObject
 
     private Matrix4x4 _projectMat = Matrix4x4.Identity;
     private Matrix4x4 _viewMat = Matrix4x4.Identity;
-
-    //public event EventHandler PositionChanged;
-    //public event EventHandler RotationChanged;
-    //public event EventHandler ScaleChanged;
 
     public Vector3 Target
     {
@@ -140,5 +135,9 @@ internal class CameraTransform : TransformObject
     {
         TargetRotation = Quaternion.Normalize(rotation);
         ViewTransformPending = true;
+
+        //var yaw = float.Atan2(2f * (TargetRotation.Y * TargetRotation.Z + TargetRotation.W * TargetRotation.X), float.Pow(TargetRotation.W, 2f) - float.Pow(TargetRotation.X, 2f) - float.Pow(TargetRotation.Y, 2f) + float.Pow(TargetRotation.Z, 2f));
+        //var pitch = float.Asin(2f * (TargetRotation.W * TargetRotation.Y - TargetRotation.X * TargetRotation.Z));
+        //var roll = float.Atan2(2f * (TargetRotation.X * TargetRotation.Y + TargetRotation.W * TargetRotation.Z), float.Pow(TargetRotation.W, 2f) + float.Pow(TargetRotation.X, 2f) - float.Pow(TargetRotation.Y, 2f) - float.Pow(TargetRotation.Z, 2f));
     }
 }

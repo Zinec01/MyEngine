@@ -1,4 +1,5 @@
-﻿using MyEngine.Interfaces;
+﻿using MyEngine.EventArgs;
+using MyEngine.Interfaces;
 using Silk.NET.OpenGL;
 
 namespace MyEngine;
@@ -10,18 +11,19 @@ internal class GameObject : GameObjectTransform, ITransformable, IDisposable
 
     public uint Id { get; } = _idCounter++;
 
-    private GameObject _parent;
-    public GameObject Parent
+    private GameObject? _parent;
+    public GameObject? Parent
     {
         get => _parent;
         set
         {
-            _parent = value;
+            if ((_parent = value) == null) return;
+
             _parent._children.Add(this);
 
-            _parent.PositionChanged += (sender, args) => ParentObjectChanged?.Invoke(sender, ObjectChangedFlag.POSITION);
-            _parent.RotationChanged += (sender, args) => ParentObjectChanged?.Invoke(sender, ObjectChangedFlag.ROTATION);
-            _parent.ScaleChanged += (sender, args) => ParentObjectChanged?.Invoke(sender, ObjectChangedFlag.SCALE);
+            _parent.PositionChanged += (sender, deltaTime) => ParentObjectChanged?.Invoke(this, new ParentObjectChangedArgs((ITransformable)sender!, deltaTime, ObjectChangedFlag.POSITION));
+            _parent.RotationChanged += (sender, deltaTime) => ParentObjectChanged?.Invoke(this, new ParentObjectChangedArgs((ITransformable)sender!, deltaTime, ObjectChangedFlag.ROTATION));
+            _parent.ScaleChanged    += (sender, deltaTime) => ParentObjectChanged?.Invoke(this, new ParentObjectChangedArgs((ITransformable)sender!, deltaTime, ObjectChangedFlag.SCALE));
         }
     }
 
@@ -37,7 +39,7 @@ internal class GameObject : GameObjectTransform, ITransformable, IDisposable
     public Texture Texture { get; }
 
     public event EventHandler<float> PermanentTransform;
-    public event EventHandler<ObjectChangedFlag> ParentObjectChanged;
+    public event EventHandler<ParentObjectChangedArgs> ParentObjectChanged;
 
     public GameObject(GL gl, float[] vertices, int[] indices)
     {
@@ -83,8 +85,7 @@ internal class GameObject : GameObjectTransform, ITransformable, IDisposable
     {
         VAO.Bind();
 
-        if (ModelTransformPending)
-            shaderProgram.SetUniform(Shader.ModelMatrix, ModelMat);
+        shaderProgram.SetUniform(Shader.ModelMatrix, ModelMat);
 
         if (Texture != null)
         {
@@ -96,22 +97,22 @@ internal class GameObject : GameObjectTransform, ITransformable, IDisposable
 
 
         //Green triangle edge lines
-        var origScale = CurrentScale;
-        TexGreen.Activate();
+        //var origScale = CurrentScale;
+        //TexGreen.Activate();
 
-        SetScale(origScale * 1.01f);
-        shaderProgram.SetUniform(Shader.ModelMatrix, ModelMat);
-        _gl.DrawElements(PrimitiveType.LineStrip, (uint)Indices.Count + 1, DrawElementsType.UnsignedInt, null);
+        //SetScale(origScale * 1.01f);
+        //shaderProgram.SetUniform(Shader.ModelMatrix, ModelMat);
+        //_gl.DrawElements(PrimitiveType.LineStrip, (uint)Indices.Count + 1, DrawElementsType.UnsignedInt, null);
 
-        SetScale(origScale * 1.03f);
-        shaderProgram.SetUniform(Shader.ModelMatrix, ModelMat);
-        _gl.DrawElements(PrimitiveType.LineStrip, (uint)Indices.Count + 1, DrawElementsType.UnsignedInt, null);
+        //SetScale(origScale * 1.03f);
+        //shaderProgram.SetUniform(Shader.ModelMatrix, ModelMat);
+        //_gl.DrawElements(PrimitiveType.LineStrip, (uint)Indices.Count + 1, DrawElementsType.UnsignedInt, null);
 
-        SetScale(origScale * 1.05f);
-        shaderProgram.SetUniform(Shader.ModelMatrix, ModelMat);
-        _gl.DrawElements(PrimitiveType.LineStrip, (uint)Indices.Count + 1, DrawElementsType.UnsignedInt, null);
+        //SetScale(origScale * 1.05f);
+        //shaderProgram.SetUniform(Shader.ModelMatrix, ModelMat);
+        //_gl.DrawElements(PrimitiveType.LineStrip, (uint)Indices.Count + 1, DrawElementsType.UnsignedInt, null);
 
-        SetScale(origScale);
+        //SetScale(origScale);
     }
 
     public void Dispose()

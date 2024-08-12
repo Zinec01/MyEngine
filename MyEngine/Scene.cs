@@ -12,7 +12,7 @@ internal class Scene : IDisposable
 
     public List<GameObject> Objects { get; } = [];
     private ShaderProgram ShaderProgram { get; }
-    public Camera Camera { get; private set; }
+    public Camera MainCamera { get; private set; }
 
     public Scene(GL gl, IWindow window, IInputContext inputContext)
     {
@@ -28,7 +28,9 @@ internal class Scene : IDisposable
         //    }
         //}
 
-        Camera = new Camera(window, inputContext);
+        MainCamera = new Camera(window);
+        MainCamera.SubscribeToKeyboardKeyPress(inputContext.Keyboards[0]);
+        MainCamera.SubscribeToMouseMovement(inputContext.Mice[0]);
 
         ShaderProgram = new ShaderProgram(gl, @"..\..\..\Shaders\basic.vert", @"..\..\..\Shaders\basic.frag");
 
@@ -54,14 +56,14 @@ internal class Scene : IDisposable
             model.Update(deltaTime);
         }
 
-        Camera.Update(deltaTime);
+        MainCamera.Update(deltaTime);
     }
 
     public void Draw()
     {
         ShaderProgram.Use();
 
-        Camera.ApplyChanges(ShaderProgram);
+        MainCamera.SendShaderData(ShaderProgram);
 
         foreach (var model in Objects)
         {

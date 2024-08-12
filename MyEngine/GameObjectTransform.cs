@@ -48,11 +48,26 @@ internal class GameObjectTransform : TransformObject
     //TODO rotation around a point
     public void Rotate(Quaternion rotation, Vector3 rotateAround)
     {
-        TargetRotation *= rotation;
+        var relativePosition = CurrentPosition - rotateAround;
+        relativePosition = Vector3.Transform(relativePosition, rotation);
+
+        TargetPosition = rotateAround + relativePosition;
+
+        ModelTransformPending = true;
     }
 
     public void SetRotation(Quaternion rotation, Vector3 rotateAround)
     {
+        // Step 1: Translate the object so that the pivot point is at the origin
+        var directionToRotateAround = CurrentPosition - rotateAround;
+
+        // Step 2: Apply the rotation
+        var rotatedDirection = Vector3.Transform(directionToRotateAround, rotation);
+
+        // Step 3: Translate the object back to its original location
+        CurrentPosition = TargetPosition = rotateAround + rotatedDirection;
+
+        // Step 4: Set the new rotation directly
         CurrentRotation = TargetRotation = rotation;
         ModelTransformPending = true;
     }

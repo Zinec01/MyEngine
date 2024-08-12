@@ -1,4 +1,5 @@
-﻿using MyEngine.Interfaces;
+﻿using MyEngine.EventArgs;
+using MyEngine.Interfaces;
 using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
@@ -152,38 +153,35 @@ internal class Game
 
         EventHandler<float> transformAction = (sender, deltaTime) =>
         {
-            if (sender is not GameObject model) return;
+            if (sender is not GameObject obj) return;
 
-            model.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, (float)deltaTime / 2));
-            model.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, (float)deltaTime / 2));
-            model.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitZ, (float)deltaTime / 2));
+            obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, (float)deltaTime / 2));
+            obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, (float)deltaTime / 2));
+            obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitZ, (float)deltaTime / 2));
 
-            if (InputContext.Keyboards[0].IsKeyPressed(Key.Left))
-            {
-                model.MoveBy(new Vector3((float)-deltaTime, 0, 0));
-            }
-            if (InputContext.Keyboards[0].IsKeyPressed(Key.Right))
-            {
-                model.MoveBy(new Vector3((float)deltaTime, 0, 0));
-            }
-            if (InputContext.Keyboards[0].IsKeyPressed(Key.Up))
-            {
-                model.MoveBy(new Vector3(0, (float)deltaTime, 0));
-            }
-            if (InputContext.Keyboards[0].IsKeyPressed(Key.Down))
-            {
-                model.MoveBy(new Vector3(0, (float)-deltaTime, 0));
-            }
+            //if (InputContext.Keyboards[0].IsKeyPressed(Key.Left))
+            //{
+            //    model.MoveBy(new Vector3((float)-deltaTime, 0, 0));
+            //}
+            //if (InputContext.Keyboards[0].IsKeyPressed(Key.Right))
+            //{
+            //    model.MoveBy(new Vector3((float)deltaTime, 0, 0));
+            //}
+            //if (InputContext.Keyboards[0].IsKeyPressed(Key.Up))
+            //{
+            //    model.MoveBy(new Vector3(0, (float)deltaTime, 0));
+            //}
+            //if (InputContext.Keyboards[0].IsKeyPressed(Key.Down))
+            //{
+            //    model.MoveBy(new Vector3(0, (float)-deltaTime, 0));
+            //}
         };
 
         var pyramid = new GameObject(GL, pyramidVerts, pyramidInds, @"..\..\..\Textures\obama.jpg");
-        //pyramid.SetScale(0.25f);
         pyramid.SetPosition(new Vector3(3f, 2f, 0));
-        //pyramid.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, 1f));
         pyramid.PermanentTransform += transformAction;
 
         var triangle = new GameObject(GL, triangleVerts, triangleInds, @"..\..\..\Textures\obama.jpg");
-        //triangle.SetScale(0.25f);
         triangle.SetPosition(new Vector3(-3f, 2f, 0));
         triangle.PermanentTransform += transformAction;
 
@@ -191,29 +189,72 @@ internal class Game
         {
             Parent = triangle
         };
-        //square.SetScale(0.25f);
         square.SetPosition(new Vector3(0f, 2f, 0f));
-        //square.PermanentTransform += transformAction;
-        square.ParentObjectChanged += (sender, changeAction) =>
+
+        EventHandler<ParentObjectChangedArgs> copyParentRotationAndMovement = (sender, args) =>
         {
-            var parent = (ITransformable)sender!;
+            if (sender is not GameObject obj) return;
 
-            if (changeAction.HasFlag(ObjectChangedFlag.ROTATION))
-                square.SetRotation(parent.CurrentRotation);
+            var parent = args.Parent;
 
-            if (changeAction.HasFlag(ObjectChangedFlag.POSITION))
-                square.SetPosition(square.CurrentPosition + (parent.CurrentPosition - parent.PreviousPosition));
+            if (args.ChangeEvent.HasFlag(ObjectChangedFlag.ROTATION))
+                obj.SetRotation(parent.CurrentRotation);
+
+            if (args.ChangeEvent.HasFlag(ObjectChangedFlag.POSITION))
+                obj.SetPosition(obj.CurrentPosition + (parent.CurrentPosition - parent.PreviousPosition));
         };
+
+        square.ParentObjectChanged += copyParentRotationAndMovement;
 
         var floor = new GameObject(GL, squareVerts, squareInds, @"..\..\..\Textures\xd.png");
         floor.SetRotation(Quaternion.CreateFromAxisAngle(Vector3.UnitX, -90f.DegToRad()));
         floor.SetScale(10f);
+
+
+        var pyramidSun = new GameObject(GL, pyramidVerts, pyramidInds);
+        var pyramidPlanet = new GameObject(GL, pyramidVerts, pyramidInds) { Parent = pyramidSun };
+        var pyramidMoon = new GameObject(GL, pyramidVerts, pyramidInds) { Parent = pyramidPlanet };
+
+        pyramidSun.SetPosition(new Vector3(0f, 5f, 0f));
+        pyramidPlanet.SetPosition(new Vector3(2.5f, 5f, 0f));
+        pyramidMoon.SetPosition(new Vector3(3.25f, 5f, 0f));
+
+        pyramidSun.SetScale(0.5f);
+        pyramidPlanet.SetScale(0.3f);
+        pyramidMoon.SetScale(0.15f);
+
+
+        EventHandler<float> rotateAroundSelf = (sender, deltaTime) =>
+        {
+            if (sender is not TransformObject obj) return;
+
+            obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, deltaTime / 2));
+        };
+
+        EventHandler<float> rotateAroundParent = (sender, deltaTime) =>
+        {
+            if (sender is not GameObject obj || obj.Parent == null) return;
+
+            obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, deltaTime * 20), obj.Parent.CurrentPosition);
+        };
+
+        pyramidSun.PermanentTransform += rotateAroundSelf;
+        pyramidPlanet.PermanentTransform += rotateAroundSelf;
+        pyramidMoon.PermanentTransform += rotateAroundSelf;
+
+        pyramidPlanet.PermanentTransform += rotateAroundParent;
+        pyramidMoon.PermanentTransform += rotateAroundParent;
+
+
 
         var scene = new Scene(GL, Window, InputContext);
         scene.Objects.Add(pyramid);
         scene.Objects.Add(triangle);
         scene.Objects.Add(square);
         scene.Objects.Add(floor);
+        scene.Objects.Add(pyramidSun);
+        scene.Objects.Add(pyramidPlanet);
+        scene.Objects.Add(pyramidMoon);
 
         Scenes.Add(scene);
 
