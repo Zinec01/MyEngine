@@ -10,9 +10,6 @@ internal class CameraTransform : TransformObject
     private float _farPlane = 100f;
     private Vector3 _target = Vector3.Zero;
 
-    private Matrix4x4 _projectMat = Matrix4x4.Identity;
-    private Matrix4x4 _viewMat = Matrix4x4.Identity;
-
     public Vector3 Target
     {
         get => _target;
@@ -71,40 +68,32 @@ internal class CameraTransform : TransformObject
     public bool ViewTransformPending { get; private set; } = true;
     public bool ProjectTransformPending { get; private set; } = true;
 
-    public Matrix4x4 ProjectMat
-    {
-        get
-        {
-            if (ProjectTransformPending)
-            {
-                _projectMat = Matrix4x4.CreatePerspectiveFieldOfView(FOV.DegToRad(), ViewPort.X / ViewPort.Y, _nearPlane, FarPlane);
-
-                ProjectTransformPending = false;
-            }
-
-            return _projectMat;
-        }
-    }
-    public Matrix4x4 ViewMat
-    {
-        get
-        {
-            if (ViewTransformPending)
-            {
-                _viewMat = Matrix4x4.CreateLookAt(CurrentPosition, CurrentPosition + Target, Up);
-
-                ViewTransformPending = false;
-            }
-
-            return _viewMat;
-        }
-    }
+    public Matrix4x4 ProjectMat { get; protected set; } = Matrix4x4.Identity;
+    public Matrix4x4 ViewMat { get; protected set; } = Matrix4x4.Identity;
 
     public CameraTransform(Vector3 position, Vector3 target)
     {
         SetPosition(position);
         SetRotation(Quaternion.CreateFromYawPitchRoll(Yaw, Pitch, Roll));
         Target = target;
+    }
+
+    public override void Update(float deltaTime)
+    {
+        Console.WriteLine("CameraTransform.Update");
+        base.Update(deltaTime);
+
+        if (ProjectTransformPending)
+        {
+            ProjectMat = Matrix4x4.CreatePerspectiveFieldOfView(FOV.DegToRad(), ViewPort.X / ViewPort.Y, _nearPlane, FarPlane);
+            ProjectTransformPending = false;
+        }
+
+        if (ViewTransformPending)
+        {
+            ViewMat = Matrix4x4.CreateLookAt(CurrentPosition, CurrentPosition + Target, Up);
+            ViewTransformPending = false;
+        }
     }
 
     protected override void OnCurrentToTargetPositionTransition(float deltaTime)
@@ -119,8 +108,8 @@ internal class CameraTransform : TransformObject
         CurrentRotation = TargetRotation;
 
         Target = Vector3.Transform(-Vector3.UnitZ, CurrentRotation);
-        Up = Vector3.Transform(Vector3.UnitY, CurrentRotation);
-        Right = Vector3.Transform(Vector3.UnitX, CurrentRotation);
+        Up     = Vector3.Transform( Vector3.UnitY, CurrentRotation);
+        Right  = Vector3.Transform( Vector3.UnitX, CurrentRotation);
 
         ViewTransformPending = true;
     }
@@ -136,8 +125,8 @@ internal class CameraTransform : TransformObject
         TargetRotation = Quaternion.Normalize(rotation);
         ViewTransformPending = true;
 
-        //var yaw = float.Atan2(2f * (TargetRotation.Y * TargetRotation.Z + TargetRotation.W * TargetRotation.X), float.Pow(TargetRotation.W, 2f) - float.Pow(TargetRotation.X, 2f) - float.Pow(TargetRotation.Y, 2f) + float.Pow(TargetRotation.Z, 2f));
+        //var yaw   = float.Atan2(2f * (TargetRotation.Y * TargetRotation.Z + TargetRotation.W * TargetRotation.X), float.Pow(TargetRotation.W, 2f) - float.Pow(TargetRotation.X, 2f) - float.Pow(TargetRotation.Y, 2f) + float.Pow(TargetRotation.Z, 2f));
         //var pitch = float.Asin(2f * (TargetRotation.W * TargetRotation.Y - TargetRotation.X * TargetRotation.Z));
-        //var roll = float.Atan2(2f * (TargetRotation.X * TargetRotation.Y + TargetRotation.W * TargetRotation.Z), float.Pow(TargetRotation.W, 2f) + float.Pow(TargetRotation.X, 2f) - float.Pow(TargetRotation.Y, 2f) - float.Pow(TargetRotation.Z, 2f));
+        //var roll  = float.Atan2(2f * (TargetRotation.X * TargetRotation.Y + TargetRotation.W * TargetRotation.Z), float.Pow(TargetRotation.W, 2f) + float.Pow(TargetRotation.X, 2f) - float.Pow(TargetRotation.Y, 2f) - float.Pow(TargetRotation.Z, 2f));
     }
 }

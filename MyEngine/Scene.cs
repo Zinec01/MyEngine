@@ -51,7 +51,7 @@ internal class Scene : IDisposable
 
     public void Update(float deltaTime)
     {
-        foreach (var model in Objects)
+        foreach (var model in Objects.Where(x => x.Parent == null))
         {
             model.Update(deltaTime);
         }

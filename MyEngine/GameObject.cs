@@ -1,6 +1,7 @@
 ﻿using MyEngine.EventArgs;
 using MyEngine.Interfaces;
 using Silk.NET.OpenGL;
+using System.Reflection;
 
 namespace MyEngine;
 
@@ -10,6 +11,7 @@ internal class GameObject : GameObjectTransform, ITransformable, IDisposable
     private static uint _idCounter = 0;
 
     public uint Id { get; } = _idCounter++;
+    public string Name { get; }
 
     private GameObject? _parent;
     public GameObject? Parent
@@ -38,13 +40,16 @@ internal class GameObject : GameObjectTransform, ITransformable, IDisposable
     private BufferObject<int> EBO { get; }
     public Texture Texture { get; }
 
+    private bool _shouldUpdate = true;
+
     public event EventHandler<float> PermanentTransform;
     public event EventHandler<ParentObjectChangedArgs> ParentObjectChanged;
 
-    public GameObject(GL gl, float[] vertices, int[] indices)
+    public GameObject(GL gl, string name, float[] vertices, int[] indices)
     {
         _gl = gl;
 
+        Name = name;
         Vertices = vertices;
         Indices = indices;
         VAO = new VAO(_gl);
@@ -56,7 +61,7 @@ internal class GameObject : GameObjectTransform, ITransformable, IDisposable
         SetupVertexAttribs();
     }
 
-    public GameObject(GL gl, float[] vertices, int[] indices, string texturePath) : this(gl, vertices, indices)
+    public GameObject(GL gl, string name, float[] vertices, int[] indices, string texturePath) : this(gl, name, vertices, indices)
     {
         Texture = new Texture(gl, texturePath);
     }
@@ -75,14 +80,23 @@ internal class GameObject : GameObjectTransform, ITransformable, IDisposable
 
     public override void Update(float deltaTime)
     {
+        var method = MethodBase.GetCurrentMethod()!;
+        Console.WriteLine($"{Name} - {method.DeclaringType!.Name}.{method.Name}");
         PermanentTransform?.Invoke(this, deltaTime);
         base.Update(deltaTime * 5);
+
+        foreach (var child in Children)
+        {
+            child.Update(deltaTime);
+        }
     }
 
     private Texture TexGreen { get; }
 
     public unsafe void Draw(ShaderProgram shaderProgram)
     {
+        var method = MethodBase.GetCurrentMethod()!;
+        Console.WriteLine($"{Name} - {method.DeclaringType!.Name}.{method.Name}");
         VAO.Bind();
 
         shaderProgram.SetUniform(Shader.ModelMatrix, ModelMat);
