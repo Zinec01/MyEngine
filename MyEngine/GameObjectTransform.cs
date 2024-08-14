@@ -70,7 +70,9 @@ internal class GameObjectTransform : TransformObject
         var method = MethodBase.GetCurrentMethod()!;
         Console.WriteLine($"{method.DeclaringType!.Name}.{method.Name} (around a point)");
 
-        CurrentPosition = TargetPosition = rotateAround + Vector3.Transform(TargetPosition - rotateAround, rotation);
+        var relativePos = TargetPosition - rotateAround;
+        var translatedPos = Vector3.Transform(relativePos, rotation);
+        CurrentPosition = TargetPosition = rotateAround + translatedPos;
 
         ModelTransformPending = true;
     }

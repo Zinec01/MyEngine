@@ -106,6 +106,11 @@ internal abstract class TransformObject : ITransformable
         Console.WriteLine($"{method.DeclaringType!.Name}.{method.Name}");
         PreviousPosition = CurrentPosition;
         CurrentPosition = Vector3.Lerp(CurrentPosition, TargetPosition, deltaTime);
+
+        if (Vector3.Distance(CurrentPosition, TargetPosition) < 0.001f)
+        {
+            CurrentRotation = TargetRotation;
+        }
     }
 
     protected virtual void OnCurrentToTargetRotationTransition(float deltaTime)
@@ -114,6 +119,11 @@ internal abstract class TransformObject : ITransformable
         Console.WriteLine($"{method.DeclaringType!.Name}.{method.Name}");
         PreviousRotation = CurrentRotation;
         CurrentRotation = Quaternion.Slerp(CurrentRotation, TargetRotation, deltaTime);
+
+        if (float.Abs(Quaternion.Dot(TargetRotation, CurrentRotation)) > 0.9985f)
+        {
+            CurrentRotation = TargetRotation;
+        }
     }
 
     protected virtual void OnCurrentToTargetScaleTransition(float deltaTime)
@@ -122,6 +132,11 @@ internal abstract class TransformObject : ITransformable
         Console.WriteLine($"{method.DeclaringType!.Name}.{method.Name}");
         PreviousScale = CurrentScale;
         CurrentScale = CurrentScale.Lerp(TargetScale, deltaTime);
+
+        if (float.Abs(TargetScale - CurrentScale) < 0.001f)
+        {
+            CurrentScale = TargetScale;
+        }
     }
 
     public virtual void MoveBy(Vector3 position)

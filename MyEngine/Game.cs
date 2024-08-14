@@ -243,7 +243,10 @@ internal class Game
 
             Console.WriteLine($"{obj.Name} - rotateAroundParent");
 
-            obj.SetRotation(Quaternion.CreateFromAxisAngle(Vector3.UnitY, deltaTime * 20), obj.Parent.CurrentPosition);
+            obj.SetRotation(Quaternion.CreateFromAxisAngle(Vector3.UnitY, deltaTime * 10), obj.Parent.CurrentPosition);
+            
+            if (obj.Parent.CurrentPosition != obj.Parent.PreviousPosition)
+                obj.SetPosition(new Vector3(obj.CurrentPosition.X,  obj.Parent.CurrentPosition.Y, obj.CurrentPosition.Z));
         };
 
         pyramidSun.PermanentTransform += rotateAroundSelf;
