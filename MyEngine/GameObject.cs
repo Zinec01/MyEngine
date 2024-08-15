@@ -1,11 +1,11 @@
 ﻿using MyEngine.EventArgs;
 using MyEngine.Interfaces;
 using Silk.NET.OpenGL;
-using System.Reflection;
+using System.Numerics;
 
 namespace MyEngine;
 
-internal class GameObject : GameObjectTransform, ITransformable, IDisposable
+public class GameObject : GameObjectTransform, ITransformable, IDisposable
 {
     private readonly GL _gl;
     private static uint _idCounter = 0;
@@ -40,12 +40,10 @@ internal class GameObject : GameObjectTransform, ITransformable, IDisposable
     private BufferObject<int> EBO { get; }
     public Texture Texture { get; }
 
-    private bool _shouldUpdate = true;
-
     public event EventHandler<float> PermanentTransform;
     public event EventHandler<ParentObjectChangedArgs> ParentObjectChanged;
 
-    public GameObject(GL gl, string name, float[] vertices, int[] indices)
+    public GameObject(GL gl, string name, float[] vertices, int[] indices, Vector3? position = null, Quaternion? rotation = null, float? scale = null)
     {
         _gl = gl;
 
@@ -56,12 +54,17 @@ internal class GameObject : GameObjectTransform, ITransformable, IDisposable
         VBO = new BufferObject<float>(gl, vertices, BufferTargetARB.ArrayBuffer, BufferUsageARB.StaticDraw);
         EBO = new BufferObject<int>(gl, indices, BufferTargetARB.ElementArrayBuffer, BufferUsageARB.StaticDraw);
 
-        TexGreen = new Texture(gl, @"..\..\..\Textures\green.png");
+        PreviousPosition = CurrentPosition = TargetPosition = position ?? Vector3.Zero;
+        PreviousRotation = CurrentRotation = TargetRotation = rotation ?? Quaternion.Identity;
+        PreviousScale    = CurrentScale    = TargetScale    = scale    ?? 1f;
+
+        TexGreen = new Texture(gl, @"..\..\..\..\MyEngine\Textures\green.png");
 
         SetupVertexAttribs();
     }
 
-    public GameObject(GL gl, string name, float[] vertices, int[] indices, string texturePath) : this(gl, name, vertices, indices)
+    public GameObject(GL gl, string name, float[] vertices, int[] indices, string texturePath, Vector3? position = null, Quaternion? rotation = null, float? scale = null)
+        : this(gl, name, vertices, indices, position, rotation, scale)
     {
         Texture = new Texture(gl, texturePath);
     }
@@ -80,8 +83,6 @@ internal class GameObject : GameObjectTransform, ITransformable, IDisposable
 
     public override void Update(float deltaTime)
     {
-        var method = MethodBase.GetCurrentMethod()!;
-        Console.WriteLine($"{Name} - {method.DeclaringType!.Name}.{method.Name}");
         PermanentTransform?.Invoke(this, deltaTime);
         base.Update(deltaTime * 5);
 
@@ -95,8 +96,6 @@ internal class GameObject : GameObjectTransform, ITransformable, IDisposable
 
     public unsafe void Draw(ShaderProgram shaderProgram)
     {
-        var method = MethodBase.GetCurrentMethod()!;
-        Console.WriteLine($"{Name} - {method.DeclaringType!.Name}.{method.Name}");
         VAO.Bind();
 
         shaderProgram.SetUniform(Shader.ModelMatrix, ModelMat);

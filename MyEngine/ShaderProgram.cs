@@ -3,7 +3,7 @@ using System.Numerics;
 
 namespace MyEngine;
 
-internal class ShaderProgram : IDisposable
+public class ShaderProgram : IDisposable
 {
     private readonly GL _gl;
 

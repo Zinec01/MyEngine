@@ -2,7 +2,7 @@
 
 namespace MyEngine;
 
-internal class Shader : IDisposable
+public class Shader : IDisposable
 {
     private readonly GL _gl;
 

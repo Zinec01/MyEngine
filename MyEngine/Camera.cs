@@ -4,7 +4,7 @@ using System.Numerics;
 
 namespace MyEngine;
 
-internal class Camera : CameraTransform
+public class Camera : CameraTransform
 {
     private const float _movementSpeed = 4f;
     private const float _lookSensitivity = 0.1f;
@@ -48,7 +48,7 @@ internal class Camera : CameraTransform
     {
         if (keyboard.IsKeyPressed(Key.R))
         {
-            SetPosition(new Vector3(0f, 2f, 3f));
+            SetPosition(new Vector3(0f, 2f, 5f));
             Yaw = 0f;
             Pitch = 0f;
             SetRotation(Quaternion.Identity);

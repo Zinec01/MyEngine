@@ -10,7 +10,7 @@ using System.Numerics;
 
 namespace MyEngine;
 
-internal class Game
+public class Game
 {
     public Color BackgroundColor { get; set; }
 
@@ -81,17 +81,13 @@ internal class Game
             Environment.Exit(0);
         }
 
-        foreach (var keyboard in InputContext.Keyboards)
-        {
-            keyboard.KeyDown += OnKeyDown;
-        }
-        foreach (var mouse in InputContext.Mice)
-        {
-            mouse.DoubleClickTime = 0;
-            mouse.Click += OnMouseClick;
-            mouse.MouseMove += OnMouseMove;
-            mouse.Scroll += OnMouseScroll;
-        }
+        InputContext.Keyboards[0].KeyDown += OnKeyDown;
+
+        InputContext.Mice[0].DoubleClickTime = 0;
+        InputContext.Mice[0].Click += OnMouseClick;
+        InputContext.Mice[0].MouseMove += OnMouseMove;
+        InputContext.Mice[0].Scroll += OnMouseScroll;
+
         Window.Center();
 
         GL = GL.GetApi(Window);
@@ -151,53 +147,29 @@ internal class Game
             1, 2, 3
         };
 
-        EventHandler<float> transformAction = (sender, deltaTime) =>
+        EventHandler<float> allAxesRotation = (sender, deltaTime) =>
         {
             if (sender is not GameObject obj) return;
-
-            Console.WriteLine($"{obj.Name} - transformAction");
 
             obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, (float)deltaTime / 2));
             obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, (float)deltaTime / 2));
             obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitZ, (float)deltaTime / 2));
-
-            //if (InputContext.Keyboards[0].IsKeyPressed(Key.Left))
-            //{
-            //    obj.MoveBy(new Vector3((float)-deltaTime, 0, 0));
-            //}
-            //if (InputContext.Keyboards[0].IsKeyPressed(Key.Right))
-            //{
-            //    obj.MoveBy(new Vector3((float)deltaTime, 0, 0));
-            //}
-            //if (InputContext.Keyboards[0].IsKeyPressed(Key.Up))
-            //{
-            //    obj.MoveBy(new Vector3(0, (float)deltaTime, 0));
-            //}
-            //if (InputContext.Keyboards[0].IsKeyPressed(Key.Down))
-            //{
-            //    obj.MoveBy(new Vector3(0, (float)-deltaTime, 0));
-            //}
         };
 
-        var pyramid = new GameObject(GL, "pyramid", pyramidVerts, pyramidInds, @"..\..\..\Textures\obama.jpg");
-        pyramid.SetPosition(new Vector3(3f, 2f, 0));
-        pyramid.PermanentTransform += transformAction;
+        var pyramid = new GameObject(GL, "pyramid", pyramidVerts, pyramidInds, @"..\..\..\..\MyEngine\Textures\obama.jpg", position: new Vector3(3f, 2f, 0));
+        pyramid.PermanentTransform += allAxesRotation;
 
-        var triangle = new GameObject(GL, "triangle", triangleVerts, triangleInds, @"..\..\..\Textures\obama.jpg");
-        triangle.SetPosition(new Vector3(-3f, 2f, 0));
-        triangle.PermanentTransform += transformAction;
+        var triangle = new GameObject(GL, "triangle", triangleVerts, triangleInds, @"..\..\..\..\MyEngine\Textures\obama.jpg", position: new Vector3(-3f, 2f, 0));
+        triangle.PermanentTransform += allAxesRotation;
 
-        var square = new GameObject(GL, "square", squareVerts, squareInds, @"..\..\..\Textures\obama.jpg")
+        var square = new GameObject(GL, "square", squareVerts, squareInds, @"..\..\..\..\MyEngine\Textures\obama.jpg", position: new Vector3(0f, 2f, 0f))
         {
             Parent = triangle
         };
-        square.SetPosition(new Vector3(0f, 2f, 0f));
 
         EventHandler<ParentObjectChangedArgs> copyParentRotationAndMovement = (sender, args) =>
         {
             if (sender is not GameObject obj) return;
-
-            Console.WriteLine($"{obj.Name} - copyParentRotationAndMovement");
 
             var parent = args.Parent;
 
@@ -210,29 +182,17 @@ internal class Game
 
         square.ParentObjectChanged += copyParentRotationAndMovement;
 
-        var floor = new GameObject(GL, "floor", squareVerts, squareInds, @"..\..\..\Textures\xd.png");
-        floor.SetRotation(Quaternion.CreateFromAxisAngle(Vector3.UnitX, -90f.DegToRad()));
-        floor.SetScale(10f);
+        var floor = new GameObject(GL, "floor", squareVerts, squareInds, @"..\..\..\..\MyEngine\Textures\xd.png", rotation: Quaternion.CreateFromAxisAngle(Vector3.UnitX, -90f.DegToRad()), scale: 10f);
 
 
-        var pyramidSun = new GameObject(GL, "pyramidSun", pyramidVerts, pyramidInds);
-        var pyramidPlanet = new GameObject(GL, "pyramidPlanet", pyramidVerts, pyramidInds) { Parent = pyramidSun };
-        var pyramidMoon = new GameObject(GL, "pyramidMoon", pyramidVerts, pyramidInds) { Parent = pyramidPlanet };
-
-        pyramidSun.SetPosition(new Vector3(3f, 5f, 0f));
-        pyramidPlanet.SetPosition(new Vector3(5f, 5f, 0f));
-        pyramidMoon.SetPosition(new Vector3(5.5f, 5f, 0f));
-
-        pyramidSun.SetScale(0.5f);
-        pyramidPlanet.SetScale(0.3f);
-        pyramidMoon.SetScale(0.15f);
+        var pyramidSun    = new GameObject(GL, "pyramidSun",    pyramidVerts, pyramidInds, position: new Vector3(3.0f, 5f, 0f), scale: 0.50f);
+        var pyramidPlanet = new GameObject(GL, "pyramidPlanet", pyramidVerts, pyramidInds, position: new Vector3(5.0f, 5f, 0f), scale: 0.30f) { Parent = pyramidSun };
+        var pyramidMoon   = new GameObject(GL, "pyramidMoon",   pyramidVerts, pyramidInds, position: new Vector3(5.5f, 5f, 0f), scale: 0.15f) { Parent = pyramidPlanet };
 
 
         EventHandler<float> rotateAroundSelf = (sender, deltaTime) =>
         {
             if (sender is not GameObject obj) return;
-
-            Console.WriteLine($"{obj.Name} - rotateAroundSelf");
 
             obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, deltaTime * (1 - obj.CurrentScale) * 5));
         };
@@ -241,12 +201,20 @@ internal class Game
         {
             if (sender is not GameObject obj || obj.Parent == null) return;
 
-            Console.WriteLine($"{obj.Name} - rotateAroundParent");
+            if (obj.Parent.CurrentPosition != obj.Parent.PreviousPosition)
+                obj.SetPosition(obj.CurrentPosition + (obj.Parent.CurrentPosition - obj.Parent.PreviousPosition));
+
+            obj.SetRotation(Quaternion.CreateFromAxisAngle(Vector3.UnitY, deltaTime * 5), obj.Parent.CurrentPosition);
+        };
+
+        EventHandler<float> rotateAroundParent2 = (sender, deltaTime) =>
+        {
+            if (sender is not GameObject obj || obj.Parent == null)  return;
+
+            if (obj.Parent.CurrentPosition != obj.Parent.PreviousPosition)
+                obj.SetPosition(obj.CurrentPosition + (obj.Parent.CurrentPosition - obj.Parent.PreviousPosition));
 
             obj.SetRotation(Quaternion.CreateFromAxisAngle(Vector3.UnitY, deltaTime * 10), obj.Parent.CurrentPosition);
-            
-            if (obj.Parent.CurrentPosition != obj.Parent.PreviousPosition)
-                obj.SetPosition(new Vector3(obj.CurrentPosition.X,  obj.Parent.CurrentPosition.Y, obj.CurrentPosition.Z));
         };
 
         pyramidSun.PermanentTransform += rotateAroundSelf;
@@ -254,13 +222,11 @@ internal class Game
         pyramidMoon.PermanentTransform += rotateAroundSelf;
 
         pyramidPlanet.PermanentTransform += rotateAroundParent;
-        pyramidMoon.PermanentTransform += rotateAroundParent;
+        pyramidMoon.PermanentTransform += rotateAroundParent2;
 
         EventHandler<float> idk = (sender, deltaTime) =>
         {
             if (sender is not GameObject obj) return;
-
-            Console.WriteLine($"{obj.Name} - idk");
 
             if (InputContext.Keyboards[0].IsKeyPressed(Key.Left))
             {
@@ -281,6 +247,13 @@ internal class Game
         };
 
         pyramidSun.PermanentTransform += idk;
+
+        pyramidSun.PermanentTransform += (sender, deltaTime) =>
+        {
+            if (sender is not GameObject obj) return;
+
+            obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, deltaTime * 2), new Vector3(0f, 5f, 0f));
+        };
 
 
 
@@ -306,8 +279,6 @@ internal class Game
 
     private void OnUpdate(double deltaTime)
     {
-        Console.WriteLine($"**Update for frame {++counter}**");
-
         if (DateTime.Now.Millisecond % 250 < 10)
         {
             FPS = (int)(1 / deltaTime);
@@ -324,8 +295,6 @@ internal class Game
     private static int counter = 0;
     private void OnRender(double deltaTime)
     {
-        Console.WriteLine($"**Rendering frame {counter}**");
-
         ImGuiController.Update((float)deltaTime);
 
         GL.ClearColor(BackgroundColor);

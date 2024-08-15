@@ -2,13 +2,13 @@
 
 namespace MyEngine;
 
-internal class CameraTransform : TransformObject
+public class CameraTransform : TransformObject
 {
-    private float _fov = 90;
+    private float   _fov       = 90;
+    private float   _nearPlane = 0.1f;
+    private float   _farPlane  = 100f;
+    private Vector3 _target    = Vector3.Zero;
     private Vector2 _viewPort;
-    private float _nearPlane = 0.1f;
-    private float _farPlane = 100f;
-    private Vector3 _target = Vector3.Zero;
 
     public Vector3 Target
     {
@@ -80,7 +80,6 @@ internal class CameraTransform : TransformObject
 
     public override void Update(float deltaTime)
     {
-        Console.WriteLine("CameraTransform.Update");
         base.Update(deltaTime);
 
         if (ProjectTransformPending)
@@ -116,12 +115,14 @@ internal class CameraTransform : TransformObject
 
     public override void SetPosition(Vector3 position)
     {
+        PreviousPosition = CurrentPosition;
         CurrentPosition = TargetPosition = position;
         ViewTransformPending = true;
     }
 
     public override void SetRotation(Quaternion rotation)
     {
+        PreviousRotation = CurrentRotation;
         TargetRotation = Quaternion.Normalize(rotation);
         ViewTransformPending = true;
 

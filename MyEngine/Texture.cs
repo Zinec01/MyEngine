@@ -3,7 +3,7 @@ using StbImageSharp;
 
 namespace MyEngine;
 
-internal class Texture
+public class Texture
 {
     private readonly GL _gl;
 
