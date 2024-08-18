@@ -95,39 +95,54 @@ public class CameraTransform : TransformObject
         }
     }
 
-    protected override void OnCurrentToTargetPositionTransition(float deltaTime)
+    protected override void PreviousPositionChanged(float deltaTime)
     {
-        base.OnCurrentToTargetPositionTransition(deltaTime);
+        base.PreviousPositionChanged(deltaTime);
         ViewTransformPending = true;
     }
 
-    protected override void OnCurrentToTargetRotationTransition(float deltaTime)
+    protected override void PreviousRotationChanged(float deltaTime)
     {
-        PreviousRotation = CurrentRotation;
-        CurrentRotation = TargetRotation;
+        base.PreviousRotationChanged(deltaTime);
+        ViewTransformPending = true;
+    }
+
+    protected override void CurrentPositionChanged(float deltaTime)
+    {
+        base.CurrentPositionChanged(deltaTime);
+        ViewTransformPending = true;
+    }
+
+    protected override void CurrentRotationChanged(float deltaTime)
+    {
+        base.CurrentRotationChanged(deltaTime);
+        ViewTransformPending = true;
+    }
+
+    protected override void LerpPosition(float deltaTime)
+    {
+        base.LerpPosition(deltaTime * 2);
+    }
+
+    protected override void LerpRotation(float deltaTime)
+    {
+        base.LerpRotation(deltaTime);
 
         Target = Vector3.Transform(-Vector3.UnitZ, CurrentRotation);
         Up     = Vector3.Transform( Vector3.UnitY, CurrentRotation);
         Right  = Vector3.Transform( Vector3.UnitX, CurrentRotation);
-
-        ViewTransformPending = true;
-    }
-
-    public override void SetPosition(Vector3 position)
-    {
-        PreviousPosition = CurrentPosition;
-        CurrentPosition = TargetPosition = position;
-        ViewTransformPending = true;
     }
 
     public override void SetRotation(Quaternion rotation)
     {
-        PreviousRotation = CurrentRotation;
-        TargetRotation = Quaternion.Normalize(rotation);
-        ViewTransformPending = true;
+        base.SetRotation(rotation);
 
-        //var yaw   = float.Atan2(2f * (TargetRotation.Y * TargetRotation.Z + TargetRotation.W * TargetRotation.X), float.Pow(TargetRotation.W, 2f) - float.Pow(TargetRotation.X, 2f) - float.Pow(TargetRotation.Y, 2f) + float.Pow(TargetRotation.Z, 2f));
-        //var pitch = float.Asin(2f * (TargetRotation.W * TargetRotation.Y - TargetRotation.X * TargetRotation.Z));
+        Target = Vector3.Transform(-Vector3.UnitZ, TargetRotation);
+        Up     = Vector3.Transform( Vector3.UnitY, TargetRotation);
+        Right  = Vector3.Transform( Vector3.UnitX, TargetRotation);
+
+        //var yaw   = float.Asin(2f * (TargetRotation.W * TargetRotation.Y - TargetRotation.X * TargetRotation.Z));
+        //var pitch = float.Atan2(2f * (TargetRotation.Y * TargetRotation.Z + TargetRotation.W * TargetRotation.X), float.Pow(TargetRotation.W, 2f) - float.Pow(TargetRotation.X, 2f) - float.Pow(TargetRotation.Y, 2f) + float.Pow(TargetRotation.Z, 2f));
         //var roll  = float.Atan2(2f * (TargetRotation.X * TargetRotation.Y + TargetRotation.W * TargetRotation.Z), float.Pow(TargetRotation.W, 2f) + float.Pow(TargetRotation.X, 2f) - float.Pow(TargetRotation.Y, 2f) - float.Pow(TargetRotation.Z, 2f));
     }
 }

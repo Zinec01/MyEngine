@@ -14,63 +14,53 @@ public class GameObjectTransform : TransformObject
 
         if (ModelTransformPending)
         {
-            ModelMat = Matrix4x4.Identity * Matrix4x4.CreateScale(CurrentScale) * Matrix4x4.CreateFromQuaternion(CurrentRotation) * Matrix4x4.CreateTranslation(CurrentPosition);
+            ModelMat = Matrix4x4.Identity
+                     * Matrix4x4.CreateScale(CurrentScale)
+                     * Matrix4x4.CreateFromQuaternion(CurrentRotation)
+                     * Matrix4x4.CreateTranslation(CurrentPosition);
+
             ModelTransformPending = false;
         }
     }
 
-    protected override void OnCurrentToTargetPositionTransition(float deltaTime)
+    protected override void PreviousPositionChanged(float deltaTime)
     {
-        base.OnCurrentToTargetPositionTransition(deltaTime);
+        base.PreviousPositionChanged(deltaTime);
         ModelTransformPending = true;
     }
 
-    protected override void OnCurrentToTargetRotationTransition(float deltaTime)
+    protected override void PreviousRotationChanged(float deltaTime)
     {
-        base.OnCurrentToTargetRotationTransition(deltaTime);
+        base.PreviousRotationChanged(deltaTime);
         ModelTransformPending = true;
     }
 
-    protected override void OnCurrentToTargetScaleTransition(float deltaTime)
+    protected override void PreviousScaleChanged(float deltaTime)
     {
-        base.OnCurrentToTargetScaleTransition(deltaTime);
+        base.PreviousScaleChanged(deltaTime);
         ModelTransformPending = true;
     }
 
-    public override void SetPosition(Vector3 position)
+    protected override void CurrentPositionChanged(float deltaTime)
     {
-        PreviousPosition = CurrentPosition;
-        CurrentPosition = TargetPosition = position;
+        base.CurrentPositionChanged(deltaTime);
         ModelTransformPending = true;
     }
 
-    public void Rotate(Quaternion rotation, Vector3 rotateAround)
+    protected override void CurrentRotationChanged(float deltaTime)
     {
-        TargetPosition = rotateAround + Vector3.Transform(TargetPosition - rotateAround, rotation);
-    }
-
-    public void SetRotation(Quaternion rotation, Vector3 rotateAround)
-    {
-        PreviousRotation = CurrentRotation;
-
-        var relativePos = TargetPosition - rotateAround;
-        var translatedPos = Vector3.Transform(relativePos, rotation);
-        CurrentPosition = TargetPosition = rotateAround + translatedPos;
-
+        base.CurrentRotationChanged(deltaTime);
         ModelTransformPending = true;
     }
 
-    public override void SetRotation(Quaternion rotation)
+    protected override void CurrentScaleChanged(float deltaTime)
     {
-        PreviousRotation = CurrentRotation;
-        CurrentRotation = TargetRotation = rotation;
+        base.CurrentScaleChanged(deltaTime);
         ModelTransformPending = true;
     }
 
-    public override void SetScale(float scale)
-    {
-        PreviousScale = CurrentScale;
-        CurrentScale = TargetScale = scale;
-        ModelTransformPending = true;
-    }
+    //public void Rotate(Quaternion rotation, Vector3 rotateAround)
+    //{
+    //    TargetPosition = rotateAround + Vector3.Transform(TargetPosition - rotateAround, rotation);
+    //}
 }

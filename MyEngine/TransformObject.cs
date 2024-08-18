@@ -5,6 +5,10 @@ namespace MyEngine;
 
 public abstract class TransformObject : ITransformable
 {
+    protected Vector3? _previousPosition = null;
+    protected Quaternion? _previousRotation = null;
+    protected float? _previousScale = null;
+
     public Vector3 PreviousPosition { get; protected set; }
     public Vector3 TargetPosition { get; protected set; }
     public Vector3 CurrentPosition { get; protected set; }
@@ -15,9 +19,9 @@ public abstract class TransformObject : ITransformable
     public float TargetScale { get; protected set; }
     public float CurrentScale { get; protected set; }
 
-    public virtual event EventHandler<float> PositionChanged;
-    public virtual event EventHandler<float> RotationChanged;
-    public virtual event EventHandler<float> ScaleChanged;
+    public event EventHandler<float> PositionChanged;
+    public event EventHandler<float> RotationChanged;
+    public event EventHandler<float> ScaleChanged;
 
     public virtual void Update(float deltaTime)
     {
@@ -28,45 +32,64 @@ public abstract class TransformObject : ITransformable
 
     protected virtual void UpdatePosition(float deltaTime)
     {
+        if (_previousPosition.HasValue || PreviousPosition != CurrentPosition)
+        {
+            PreviousPosition = _previousPosition ?? CurrentPosition;
+            _previousPosition = null;
+            PreviousPositionChanged(deltaTime);
+        }
+
         if (CurrentPosition != TargetPosition)
         {
-            OnCurrentToTargetPositionTransition(deltaTime);
-            PositionChanged?.Invoke(this, deltaTime);
+            LerpPosition(deltaTime);
+            CurrentPositionChanged(deltaTime);
         }
     }
 
     protected virtual void UpdateRotation(float deltaTime)
     {
+        if (_previousRotation.HasValue || PreviousRotation != CurrentRotation)
+        {
+            PreviousRotation = _previousRotation ?? CurrentRotation;
+            _previousRotation = null;
+            PreviousRotationChanged(deltaTime);
+        }
+
         if (CurrentRotation != TargetRotation)
         {
-            OnCurrentToTargetRotationTransition(deltaTime);
-            RotationChanged?.Invoke(this, deltaTime);
+            LerpRotation(deltaTime);
+            CurrentRotationChanged(deltaTime);
         }
     }
 
     protected virtual void UpdateScale(float deltaTime)
     {
+        if (_previousScale.HasValue || PreviousScale != CurrentScale)
+        {
+            PreviousScale = _previousScale ?? CurrentScale;
+            _previousScale = null;
+            PreviousScaleChanged(deltaTime);
+        }
+
         if (CurrentScale != TargetScale)
         {
-            OnCurrentToTargetScaleTransition(deltaTime);
-            ScaleChanged?.Invoke(this, deltaTime);
+            LerpScale(deltaTime);
+            CurrentScaleChanged(deltaTime);
         }
     }
 
-    protected virtual void OnCurrentToTargetPositionTransition(float deltaTime)
+    protected virtual void LerpPosition(float deltaTime)
     {
-        PreviousPosition = CurrentPosition;
         CurrentPosition = Vector3.Lerp(CurrentPosition, TargetPosition, deltaTime);
 
         if (Vector3.Distance(CurrentPosition, TargetPosition) < 0.001f)
         {
-            CurrentRotation = TargetRotation;
+            CurrentPosition = TargetPosition;
         }
     }
 
-    protected virtual void OnCurrentToTargetRotationTransition(float deltaTime)
+    protected virtual void LerpRotation(float deltaTime)
     {
-        PreviousRotation = CurrentRotation;
         CurrentRotation = Quaternion.Slerp(CurrentRotation, TargetRotation, deltaTime);
 
         if (float.Abs(Quaternion.Dot(TargetRotation, CurrentRotation)) > 0.9985f)
@@ -75,15 +98,33 @@ public abstract class TransformObject : ITransformable
         }
     }
 
-    protected virtual void OnCurrentToTargetScaleTransition(float deltaTime)
+    protected virtual void LerpScale(float deltaTime)
     {
-        PreviousScale = CurrentScale;
         CurrentScale = CurrentScale.Lerp(TargetScale, deltaTime);
 
         if (float.Abs(TargetScale - CurrentScale) < 0.001f)
         {
             CurrentScale = TargetScale;
         }
+    }
+
+    protected virtual void PreviousPositionChanged(float deltaTime) { }
+    protected virtual void PreviousRotationChanged(float deltaTime) { }
+    protected virtual void PreviousScaleChanged(float deltaTime) { }
+
+    protected virtual void CurrentPositionChanged(float deltaTime)
+    {
+        PositionChanged?.Invoke(this, deltaTime);
+    }
+
+    protected virtual void CurrentRotationChanged(float deltaTime)
+    {
+        RotationChanged?.Invoke(this, deltaTime);
+    }
+
+    protected virtual void CurrentScaleChanged(float deltaTime)
+    {
+        ScaleChanged?.Invoke(this, deltaTime);
     }
 
     public virtual void MoveBy(Vector3 position)
@@ -98,7 +139,7 @@ public abstract class TransformObject : ITransformable
 
     public virtual void SetPosition(Vector3 position)
     {
-        PreviousPosition = CurrentPosition;
+        _previousPosition ??= CurrentPosition;
         CurrentPosition = TargetPosition = position;
     }
 
@@ -109,8 +150,14 @@ public abstract class TransformObject : ITransformable
 
     public virtual void SetRotation(Quaternion rotation)
     {
-        PreviousRotation = CurrentRotation;
+        _previousRotation ??= CurrentRotation;
         CurrentRotation = TargetRotation = rotation;
+    }
+
+    public virtual void Rotate(Quaternion rotation, Vector3 rotateAround)
+    {
+        SetPosition(rotateAround + Vector3.Transform(TargetPosition - rotateAround, rotation));
+        Rotate(rotation);
     }
 
     public virtual void ChangeScale(float scale)
@@ -120,7 +167,7 @@ public abstract class TransformObject : ITransformable
 
     public virtual void SetScale(float scale)
     {
-        PreviousScale = CurrentScale;
+        _previousScale ??= CurrentScale;
         CurrentScale = TargetScale = scale;
     }
 }

@@ -10,7 +10,7 @@ using System.Numerics;
 
 namespace MyEngine;
 
-public class Game
+public class Application
 {
     public Color BackgroundColor { get; set; }
 
@@ -42,7 +42,7 @@ public class Game
     public event EventHandler<Key> KeyDown;
 
 
-    public Game(int width, int height, string name)
+    public Application(int width, int height, string name)
     {
         var options = WindowOptions.Default;
         options.Size = new Vector2D<int>(width, height);
@@ -185,16 +185,34 @@ public class Game
         var floor = new GameObject(GL, "floor", squareVerts, squareInds, @"..\..\..\..\MyEngine\Textures\xd.png", rotation: Quaternion.CreateFromAxisAngle(Vector3.UnitX, -90f.DegToRad()), scale: 10f);
 
 
-        var pyramidSun    = new GameObject(GL, "pyramidSun",    pyramidVerts, pyramidInds, position: new Vector3(3.0f, 5f, 0f), scale: 0.50f);
-        var pyramidPlanet = new GameObject(GL, "pyramidPlanet", pyramidVerts, pyramidInds, position: new Vector3(5.0f, 5f, 0f), scale: 0.30f) { Parent = pyramidSun };
-        var pyramidMoon   = new GameObject(GL, "pyramidMoon",   pyramidVerts, pyramidInds, position: new Vector3(5.5f, 5f, 0f), scale: 0.15f) { Parent = pyramidPlanet };
+        var pyramidSun    = new GameObject(GL, "pyramidSun",    pyramidVerts, pyramidInds, @"..\..\..\..\MyEngine\Textures\teletubbies_sun.png", position: new Vector3(3f, 5f, 0f), scale: 0.50f);
+
+        var pyramidPlanetRight = new GameObject(GL, "pyramidPlanetRight", pyramidVerts, pyramidInds, @"..\..\..\..\MyEngine\Textures\xd.png", position: new Vector3(5f, 5f, 0f), scale: 0.30f) { Parent = pyramidSun };
+        var pyramidMoonRight   = new GameObject(GL, "pyramidMoonRight",   pyramidVerts, pyramidInds, @"..\..\..\..\MyEngine\Textures\xd.png", position: new Vector3(6f, 5f, 0f), scale: 0.15f) { Parent = pyramidPlanetRight };
+        var pyramidMoonRight2   = new GameObject(GL, "pyramidMoonRight2",   pyramidVerts, pyramidInds, @"..\..\..\..\MyEngine\Textures\xd.png", position: new Vector3(6f, 5f, 0.5f), scale: 0.08f) { Parent = pyramidMoonRight };
+        var pyramidMoonRight3   = new GameObject(GL, "pyramidMoonRight3",   pyramidVerts, pyramidInds, @"..\..\..\..\MyEngine\Textures\xd.png", position: new Vector3(6f, 5f, 1f), scale: 0.06f) { Parent = pyramidMoonRight2 };
+
+        var pyramidPlanetLeft = new GameObject(GL, "pyramidPlanetLeft", pyramidVerts, pyramidInds, @"..\..\..\..\MyEngine\Textures\xd.png", position: new Vector3(1f, 5f, 0f), scale: 0.30f) { Parent = pyramidSun };
+        var pyramidMoonLeft = new GameObject(GL, "pyramidMoonLeft", pyramidVerts, pyramidInds, @"..\..\..\..\MyEngine\Textures\xd.png", position: new Vector3(0f, 5f, 0f), scale: 0.15f) { Parent = pyramidPlanetLeft };
+        var pyramidMoonLeft2 = new GameObject(GL, "pyramidMoonLeft2", pyramidVerts, pyramidInds, @"..\..\..\..\MyEngine\Textures\xd.png", position: new Vector3(0f, 5f, -0.5f), scale: 0.08f) { Parent = pyramidMoonLeft };
+        var pyramidMoonLeft3 = new GameObject(GL, "pyramidMoonLeft3", pyramidVerts, pyramidInds, @"..\..\..\..\MyEngine\Textures\xd.png", position: new Vector3(0f, 5f, -1f), scale: 0.06f) { Parent = pyramidMoonLeft2 };
+
+        var pyramidPlanetFront = new GameObject(GL, "pyramidPlanetFront", pyramidVerts, pyramidInds, @"..\..\..\..\MyEngine\Textures\xd.png", position: new Vector3(3f, 5f, 2f), scale: 0.30f) { Parent = pyramidSun };
+        var pyramidMoonFront = new GameObject(GL, "pyramidMoonFront", pyramidVerts, pyramidInds, @"..\..\..\..\MyEngine\Textures\xd.png", position: new Vector3(3f, 5f, 3f), scale: 0.15f) { Parent = pyramidPlanetFront };
+        var pyramidMoonFront2 = new GameObject(GL, "pyramidMoonFront2", pyramidVerts, pyramidInds, @"..\..\..\..\MyEngine\Textures\xd.png", position: new Vector3(2.5f, 5f, 3f), scale: 0.08f) { Parent = pyramidMoonFront };
+        var pyramidMoonFront3 = new GameObject(GL, "pyramidMoonFront3", pyramidVerts, pyramidInds, @"..\..\..\..\MyEngine\Textures\xd.png", position: new Vector3(2f, 5f, 3f), scale: 0.06f) { Parent = pyramidMoonFront2 };
+
+        var pyramidPlanetBack = new GameObject(GL, "pyramidPlanetBack", pyramidVerts, pyramidInds, @"..\..\..\..\MyEngine\Textures\xd.png", position: new Vector3(3f, 5f, -2f), scale: 0.30f) { Parent = pyramidSun };
+        var pyramidMoonBack = new GameObject(GL, "pyramidMoonBack", pyramidVerts, pyramidInds, @"..\..\..\..\MyEngine\Textures\xd.png", position: new Vector3(3f, 5f, -3f), scale: 0.15f) { Parent = pyramidPlanetBack };
+        var pyramidMoonBack2 = new GameObject(GL, "pyramidMoonBack2", pyramidVerts, pyramidInds, @"..\..\..\..\MyEngine\Textures\xd.png", position: new Vector3(3.5f, 5f, -3f), scale: 0.08f) { Parent = pyramidMoonBack };
+        var pyramidMoonBack3 = new GameObject(GL, "pyramidMoonBack3", pyramidVerts, pyramidInds, @"..\..\..\..\MyEngine\Textures\xd.png", position: new Vector3(4f, 5f, -3f), scale: 0.06f) { Parent = pyramidMoonBack2 };
 
 
         EventHandler<float> rotateAroundSelf = (sender, deltaTime) =>
         {
             if (sender is not GameObject obj) return;
 
-            obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, deltaTime * (1 - obj.CurrentScale) * 5));
+            obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, deltaTime * (1 - obj.CurrentScale) * 2));
         };
 
         EventHandler<float> rotateAroundParent = (sender, deltaTime) =>
@@ -204,7 +222,7 @@ public class Game
             if (obj.Parent.CurrentPosition != obj.Parent.PreviousPosition)
                 obj.SetPosition(obj.CurrentPosition + (obj.Parent.CurrentPosition - obj.Parent.PreviousPosition));
 
-            obj.SetRotation(Quaternion.CreateFromAxisAngle(Vector3.UnitY, deltaTime * 5), obj.Parent.CurrentPosition);
+            obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, deltaTime), obj.Parent.CurrentPosition);
         };
 
         EventHandler<float> rotateAroundParent2 = (sender, deltaTime) =>
@@ -214,15 +232,71 @@ public class Game
             if (obj.Parent.CurrentPosition != obj.Parent.PreviousPosition)
                 obj.SetPosition(obj.CurrentPosition + (obj.Parent.CurrentPosition - obj.Parent.PreviousPosition));
 
-            obj.SetRotation(Quaternion.CreateFromAxisAngle(Vector3.UnitY, deltaTime * 10), obj.Parent.CurrentPosition);
+            obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, deltaTime * 2), obj.Parent.CurrentPosition);
+        };
+
+        EventHandler<float> rotateAroundParent3 = (sender, deltaTime) =>
+        {
+            if (sender is not GameObject obj || obj.Parent == null) return;
+
+            if (obj.Parent.CurrentPosition != obj.Parent.PreviousPosition)
+                obj.SetPosition(obj.CurrentPosition + (obj.Parent.CurrentPosition - obj.Parent.PreviousPosition));
+
+            obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, deltaTime * 5), obj.Parent.CurrentPosition);
+        };
+
+        EventHandler<float> rotateAroundParent4 = (sender, deltaTime) =>
+        {
+            if (sender is not GameObject obj || obj.Parent == null) return;
+
+            if (obj.Parent.CurrentPosition != obj.Parent.PreviousPosition)
+                obj.SetPosition(obj.CurrentPosition + (obj.Parent.CurrentPosition - obj.Parent.PreviousPosition));
+
+            obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, deltaTime * 8), obj.Parent.CurrentPosition);
         };
 
         pyramidSun.PermanentTransform += rotateAroundSelf;
-        pyramidPlanet.PermanentTransform += rotateAroundSelf;
-        pyramidMoon.PermanentTransform += rotateAroundSelf;
 
-        pyramidPlanet.PermanentTransform += rotateAroundParent;
-        pyramidMoon.PermanentTransform += rotateAroundParent2;
+        pyramidPlanetRight.PermanentTransform += rotateAroundSelf;
+        pyramidMoonRight.PermanentTransform += rotateAroundSelf;
+        pyramidMoonRight2.PermanentTransform += rotateAroundSelf;
+        pyramidMoonRight3.PermanentTransform += rotateAroundSelf;
+
+        pyramidPlanetLeft.PermanentTransform += rotateAroundSelf;
+        pyramidMoonLeft.PermanentTransform += rotateAroundSelf;
+        pyramidMoonLeft2.PermanentTransform += rotateAroundSelf;
+        pyramidMoonLeft3.PermanentTransform += rotateAroundSelf;
+
+        pyramidPlanetFront.PermanentTransform += rotateAroundSelf;
+        pyramidMoonFront.PermanentTransform += rotateAroundSelf;
+        pyramidMoonFront2.PermanentTransform += rotateAroundSelf;
+        pyramidMoonFront3.PermanentTransform += rotateAroundSelf;
+
+        pyramidPlanetBack.PermanentTransform += rotateAroundSelf;
+        pyramidMoonBack.PermanentTransform += rotateAroundSelf;
+        pyramidMoonBack2.PermanentTransform += rotateAroundSelf;
+        pyramidMoonBack3.PermanentTransform += rotateAroundSelf;
+
+
+        pyramidPlanetRight.PermanentTransform += rotateAroundParent;
+        pyramidMoonRight.PermanentTransform += rotateAroundParent2;
+        pyramidMoonRight2.PermanentTransform += rotateAroundParent3;
+        pyramidMoonRight3.PermanentTransform += rotateAroundParent4;
+
+        pyramidPlanetLeft.PermanentTransform += rotateAroundParent;
+        pyramidMoonLeft.PermanentTransform += rotateAroundParent2;
+        pyramidMoonLeft2.PermanentTransform += rotateAroundParent3;
+        pyramidMoonLeft3.PermanentTransform += rotateAroundParent4;
+
+        pyramidPlanetFront.PermanentTransform += rotateAroundParent;
+        pyramidMoonFront.PermanentTransform += rotateAroundParent2;
+        pyramidMoonFront2.PermanentTransform += rotateAroundParent3;
+        pyramidMoonFront3.PermanentTransform += rotateAroundParent4;
+
+        pyramidPlanetBack.PermanentTransform += rotateAroundParent;
+        pyramidMoonBack.PermanentTransform += rotateAroundParent2;
+        pyramidMoonBack2.PermanentTransform += rotateAroundParent3;
+        pyramidMoonBack3.PermanentTransform += rotateAroundParent4;
 
         EventHandler<float> idk = (sender, deltaTime) =>
         {
@@ -248,12 +322,12 @@ public class Game
 
         pyramidSun.PermanentTransform += idk;
 
-        pyramidSun.PermanentTransform += (sender, deltaTime) =>
-        {
-            if (sender is not GameObject obj) return;
+        //pyramidSun.PermanentTransform += (sender, deltaTime) =>
+        //{
+        //    if (sender is not GameObject obj) return;
 
-            obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, deltaTime * 2), new Vector3(0f, 5f, 0f));
-        };
+        //    obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, deltaTime), new Vector3(0f, 5f, 0f));
+        //};
 
 
 
@@ -263,8 +337,22 @@ public class Game
         scene.Objects.Add(square);
         scene.Objects.Add(floor);
         scene.Objects.Add(pyramidSun);
-        scene.Objects.Add(pyramidPlanet);
-        scene.Objects.Add(pyramidMoon);
+        scene.Objects.Add(pyramidPlanetRight);
+        scene.Objects.Add(pyramidMoonRight);
+        scene.Objects.Add(pyramidMoonRight2);
+        scene.Objects.Add(pyramidMoonRight3);
+        scene.Objects.Add(pyramidPlanetLeft);
+        scene.Objects.Add(pyramidMoonLeft);
+        scene.Objects.Add(pyramidMoonLeft2);
+        scene.Objects.Add(pyramidMoonLeft3);
+        scene.Objects.Add(pyramidPlanetFront);
+        scene.Objects.Add(pyramidMoonFront);
+        scene.Objects.Add(pyramidMoonFront2);
+        scene.Objects.Add(pyramidMoonFront3);
+        scene.Objects.Add(pyramidPlanetBack);
+        scene.Objects.Add(pyramidMoonBack);
+        scene.Objects.Add(pyramidMoonBack2);
+        scene.Objects.Add(pyramidMoonBack3);
 
         Scenes.Add(scene);
 
@@ -292,13 +380,13 @@ public class Game
 
         ActiveScene?.Update((float)deltaTime);
     }
-    private static int counter = 0;
+
     private void OnRender(double deltaTime)
     {
         ImGuiController.Update((float)deltaTime);
 
         GL.ClearColor(BackgroundColor);
-        GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+        GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit/* | ClearBufferMask.StencilBufferBit*/);
 
         if (ImGuiNET.ImGui.Begin("Info"))
         {

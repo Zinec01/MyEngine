@@ -82,5 +82,6 @@ public class Scene : IDisposable
         }
 
         ShaderProgram.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

@@ -48,4 +48,9 @@ public class Texture
         _gl.ActiveTexture(TextureUnit.Texture0);
         _gl.BindTexture(TextureTarget.Texture2D, Id);
     }
+
+    public void Deactivate()
+    {
+        _gl.BindTexture(TextureTarget.Texture2D, 0);
+    }
 }

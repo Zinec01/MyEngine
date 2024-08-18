@@ -1,6 +1,7 @@
 ﻿using MyEngine.EventArgs;
 using MyEngine.Interfaces;
 using Silk.NET.OpenGL;
+using System.ComponentModel.DataAnnotations;
 using System.Numerics;
 
 namespace MyEngine;
@@ -107,25 +108,27 @@ public class GameObject : GameObjectTransform, ITransformable, IDisposable
         }
 
         _gl.DrawElements(PrimitiveType.Triangles, (uint)Indices.Count, DrawElementsType.UnsignedInt, null);
+        Texture?.Deactivate();
 
 
-        //Green triangle edge lines
-        //var origScale = CurrentScale;
-        //TexGreen.Activate();
+        DrawTriangleLines(shaderProgram, TexGreen);
+    }
 
-        //SetScale(origScale * 1.01f);
-        //shaderProgram.SetUniform(Shader.ModelMatrix, ModelMat);
-        //_gl.DrawElements(PrimitiveType.LineStrip, (uint)Indices.Count + 1, DrawElementsType.UnsignedInt, null);
+    private unsafe void DrawTriangleLines(ShaderProgram shaderProgram, Texture lineTexture, byte layers = 10)
+    {
+        lineTexture.Activate();
+        shaderProgram.SetUniform(Shader.TextureSampler, 0);
 
-        //SetScale(origScale * 1.03f);
-        //shaderProgram.SetUniform(Shader.ModelMatrix, ModelMat);
-        //_gl.DrawElements(PrimitiveType.LineStrip, (uint)Indices.Count + 1, DrawElementsType.UnsignedInt, null);
+        for (byte i = 0; i < layers; i++)
+        {
+            shaderProgram.SetUniform(Shader.ModelMatrix, Matrix4x4.Identity
+                                                         * Matrix4x4.CreateScale(CurrentScale * (1f + i / 500f))
+                                                         * Matrix4x4.CreateFromQuaternion(CurrentRotation)
+                                                         * Matrix4x4.CreateTranslation(CurrentPosition));
+            _gl.DrawElements(PrimitiveType.LineStrip, (uint)Indices.Count + 1, DrawElementsType.UnsignedInt, null);
+        }
 
-        //SetScale(origScale * 1.05f);
-        //shaderProgram.SetUniform(Shader.ModelMatrix, ModelMat);
-        //_gl.DrawElements(PrimitiveType.LineStrip, (uint)Indices.Count + 1, DrawElementsType.UnsignedInt, null);
-
-        //SetScale(origScale);
+        lineTexture.Deactivate();
     }
 
     public void Dispose()
@@ -133,14 +136,6 @@ public class GameObject : GameObjectTransform, ITransformable, IDisposable
         VBO.Dispose();
         EBO.Dispose();
         VAO.Dispose();
+        GC.SuppressFinalize(this);
     }
-
-    //public static void SubscribeTo(ITransformable @object, Action<ITransformable, ObjectChangedFlag> updateAction)
-    //{
-    //    @object.Moved += (sender, flags) =>
-    //    {
-    //        if (sender is ITransformable obj)
-    //            updateAction?.Invoke(obj, flags);
-    //    };
-    //}
 }
