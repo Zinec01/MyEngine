@@ -148,16 +148,31 @@ public abstract class TransformObject : ITransformable
         TargetRotation *= rotation;
     }
 
+    public virtual void Rotate(Vector3 axis, float angle)
+    {
+        Rotate(Quaternion.CreateFromAxisAngle(axis, angle));
+    }
+
     public virtual void SetRotation(Quaternion rotation)
     {
         _previousRotation ??= CurrentRotation;
         CurrentRotation = TargetRotation = rotation;
     }
 
+    public virtual void SetRotation(Vector3 axis, float angle)
+    {
+        SetRotation(Quaternion.CreateFromAxisAngle(axis, angle));
+    }
+
     public virtual void Rotate(Quaternion rotation, Vector3 rotateAround)
     {
         SetPosition(rotateAround + Vector3.Transform(TargetPosition - rotateAround, rotation));
         Rotate(rotation);
+    }
+
+    public virtual void Rotate(Vector3 axis, float angle, Vector3 rotateAround)
+    {
+        Rotate(Quaternion.CreateFromAxisAngle(axis, angle));
     }
 
     public virtual void ChangeScale(float scale)

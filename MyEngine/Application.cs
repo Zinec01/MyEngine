@@ -151,9 +151,7 @@ public class Application
         {
             if (sender is not GameObject obj) return;
 
-            obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, (float)deltaTime / 2));
-            obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitY, (float)deltaTime / 2));
-            obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitZ, (float)deltaTime / 2));
+            obj.Rotate(Quaternion.CreateFromAxisAngle(Vector3.One, (float)deltaTime / 2));
         };
 
         var pyramid = new GameObject(GL, "pyramid", pyramidVerts, pyramidInds, @"..\..\..\..\MyEngine\Textures\obama.jpg", position: new Vector3(3f, 2f, 0));
