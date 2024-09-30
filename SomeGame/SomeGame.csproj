@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ECSEngineTest\ECSEngineTest.csproj" />
     <ProjectReference Include="..\MyEngine\MyEngine.csproj" />
   </ItemGroup>
 

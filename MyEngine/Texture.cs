@@ -22,7 +22,6 @@ public class Texture
     {
         var id = _gl.GenTexture();
 
-        _gl.ActiveTexture(TextureUnit.Texture0);
         _gl.BindTexture(TextureTarget.Texture2D, id);
 
         var imgRes = ImageResult.FromMemory(File.ReadAllBytes(FilePath), ColorComponents.RedGreenBlueAlpha);

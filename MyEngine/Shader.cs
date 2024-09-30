@@ -66,8 +66,8 @@ public class Shader : IDisposable
         _gl.DeleteShader(Id);
     }
 
-    public const string ModelMatrix = "vuModelMat";
-    public const string ViewMatrix = "vuViewMat";
-    public const string ProjectionMatrix = "vuProjectMat";
-    public const string TextureSampler = "fuTex";
+    public const string ModelMatrix = "uModelMat";
+    public const string ViewMatrix = "uViewMat";
+    public const string ProjectionMatrix = "uProjectMat";
+    public const string TextureSampler = "uTex";
 }

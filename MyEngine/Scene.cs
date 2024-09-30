@@ -32,7 +32,7 @@ public class Scene : IDisposable
         MainCamera.SubscribeToKeyboardKeyPress(inputContext.Keyboards[0]);
         MainCamera.SubscribeToMouseMovement(inputContext.Mice[0]);
 
-        ShaderProgram = new ShaderProgram(gl, @"..\..\..\..\MyEngine\Shaders\basic.vert", @"..\..\..\..\MyEngine\Shaders\basic.frag");
+        ShaderProgram = new ShaderProgram(gl, @"..\..\..\..\MyEngine\Shaders\basic_light.vert", @"..\..\..\..\MyEngine\Shaders\basic_light.frag");
 
         // TODO: Move shader program out of scene and make them static to use freely with models
 
