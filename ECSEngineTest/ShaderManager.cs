@@ -82,12 +82,16 @@ public static class ShaderManager
         return shaderInfo;
     }
 
-    public static bool CompileShader(uint shaderId)
+    public static void CompileShader(uint shaderId)
     {
         Window.GL.CompileShader(shaderId);
 
-        var info = Window.GL.GetShaderInfoLog(shaderId);
-        return string.IsNullOrEmpty(info);
+        Window.GL.GetShader(shaderId, ShaderParameterName.CompileStatus, out var status);
+        if (status == 0)
+        {
+            var info = Window.GL.GetShaderInfoLog(shaderId);
+            throw new Exception($"Could not compile shader: {info}");
+        }
     }
 
     public static void CompileAllShaders()
@@ -148,9 +152,7 @@ public static class ShaderManager
         if (status == 0)
         {
             var info = Window.GL.GetProgramInfoLog(programId);
-            Console.WriteLine($"[ERROR] Failed linking shader program with ID = {programId}: {info}");
-
-            Environment.Exit(0);
+            throw new Exception($"Could not link shader program: {info}");
         }
     }
 
@@ -267,11 +269,11 @@ public static class ShaderManager
             DisposeShaderProgram(program.Id);
             _shaderPrograms.Remove(programKvp.Key);
 
-            var vertexId = newShader.Type == ShaderType.Vertex ? newShader.Id : program.VertexId;
-            var fragmentId = newShader.Type == ShaderType.Fragment ? newShader.Id : program.FragmentId;
-            var otherIds = newShader.Type is ShaderType.Vertex or ShaderType.Fragment
-                            ? program.OtherIds
-                            : program.OtherIds.Where(x => x != shaderInfo.Id).Append(newShader.Id).ToArray();
+            var vertexId   = newShader.Type is ShaderType.Vertex   ? newShader.Id : program.VertexId;
+            var fragmentId = newShader.Type is ShaderType.Fragment ? newShader.Id : program.FragmentId;
+            var otherIds   = newShader.Type is ShaderType.Vertex or ShaderType.Fragment
+                                ? program.OtherIds
+                                : program.OtherIds.Where(x => x != shaderInfo.Id).Append(newShader.Id).ToArray();
 
             newPrograms.Add(CreateShaderProgram(program.Name, vertexId, fragmentId, otherIds));
         }
