@@ -12,14 +12,7 @@ public static class ShaderManager
 
     public static ShaderProgramComponent GetShaderProgram(string name, string vertexPath, string fragmentPath, params ShaderFile[] otherShaders)
     {
-        if (string.IsNullOrEmpty(vertexPath))
-            throw new ArgumentNullException(nameof(vertexPath));
-
-        if (string.IsNullOrEmpty(fragmentPath))
-            throw new ArgumentNullException(nameof(fragmentPath));
-
-        if (otherShaders.Any(x => x.Type == ShaderType.Vertex || x.Type == ShaderType.Fragment))
-            throw new InvalidDataException("A shader program cannot contain more than one vertex or fragment shader!");
+        CheckShadersValidity(vertexPath, fragmentPath, otherShaders);
 
         var programName = GenShaderProgramName(vertexPath, fragmentPath, otherShaders.Select(x => x.FilePath).ToArray());
 
@@ -31,7 +24,7 @@ public static class ShaderManager
 
         var otherShaderInfos = otherShaders.Select(x => LoadShader(x.FilePath, x.Type));
 
-        var component = CreateShaderProgram(name, vertex.Id, fragment.Id, [..otherShaderInfos.Select(x => x.Id)]); //new ShaderProgramComponent(programId, name, vertex.Id, fragment.Id);
+        var component = CreateShaderProgram(name, vertex.Id, fragment.Id, [..otherShaderInfos.Select(x => x.Id)]);
 
         _shaderPrograms.Add(programName, component);
 
@@ -121,6 +114,30 @@ public static class ShaderManager
     {
         CompileShader(shaderId);
         AttachShaderToProgram(shaderId, programId);
+    }
+
+    private static void CheckShadersValidity(string vertexPath, string fragmentPath, ShaderFile[] otherShaders)
+    {
+        if (string.IsNullOrEmpty(vertexPath))
+            throw new ArgumentNullException(nameof(vertexPath));
+
+        if (!File.Exists(vertexPath))
+            throw new FileNotFoundException();
+
+        if (string.IsNullOrEmpty(fragmentPath))
+            throw new ArgumentNullException(nameof(fragmentPath));
+
+        if (!File.Exists(fragmentPath))
+            throw new FileNotFoundException();
+
+        if (otherShaders.Any(x => x.Type == ShaderType.Vertex || x.Type == ShaderType.Fragment))
+            throw new InvalidDataException("A shader program cannot contain more than one vertex or fragment shader!");
+
+        if (otherShaders.Any(x => string.IsNullOrEmpty(x.FilePath)))
+            throw new ArgumentNullException(nameof(otherShaders));
+
+        if (otherShaders.Any(x => !File.Exists(x.FilePath)))
+            throw new FileNotFoundException();
     }
 
     public static void LinkShaderProgram(uint programId)

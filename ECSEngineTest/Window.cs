@@ -23,12 +23,13 @@ public class Window
         options.VSync = settings.VSync;
 
         _window = Silk.NET.Windowing.Window.Create(options);
-        
+
         _window.Load += OnWindowLoad;
         _window.Update += OnWindowUpdate;
         _window.Render += OnWindowRender;
         _window.FramebufferResize += OnWindowFramebufferResize;
         _window.Closing += OnWindowClose;
+        //_window.Initialize();
     }
 
     public void Run()

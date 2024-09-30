@@ -18,8 +18,7 @@ public class SceneLoader(EntityStore entityStore) : IDisposable
 
     public unsafe void LoadScene(string filePath, SceneLoadFlags flags = SceneLoadFlags.Everything)
     {
-        var extension = Path.GetExtension(filePath);
-        if (!SUPPORTED_FORMATS.Contains(extension))
+        if (!SUPPORTED_FORMATS.Contains(Path.GetExtension(filePath)))
             throw new NotImplementedException("Format not yet supported");
 
         var scene = LoadSceneFromFile(filePath);
@@ -42,6 +41,9 @@ public class SceneLoader(EntityStore entityStore) : IDisposable
 
     private unsafe Silk.NET.Assimp.Scene* LoadSceneFromFile(string filePath)
     {
+        if (!System.IO.File.Exists(filePath))
+            throw new FileNotFoundException($"The specified file could not be found: {filePath}");
+
         var scene = _assimp.ImportFile(filePath, (uint)(PostProcessSteps.Triangulate
                                                         | PostProcessSteps.GenerateSmoothNormals
                                                         | PostProcessSteps.FlipUVs
