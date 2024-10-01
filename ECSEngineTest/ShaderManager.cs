@@ -1,16 +1,17 @@
 ﻿using ECSEngineTest.Components;
+using Friflo.Engine.ECS;
 using Silk.NET.OpenGL;
 using System.Numerics;
 
 namespace ECSEngineTest;
 
-public static class ShaderManager
+public class ShaderManager(EntityStore entityStore)
 {
     private static readonly List<ShaderInfo> _shaders = [];
     private static readonly Dictionary<string, ShaderProgramComponent> _shaderPrograms = [];
     private static readonly Dictionary<string, int> _uniformLocations = [];
 
-    public static ShaderProgramComponent GetShaderProgram(string name, string vertexPath, string fragmentPath, params ShaderFile[] otherShaders)
+    public ShaderProgramComponent GetShaderProgram(string name, string vertexPath, string fragmentPath, params ShaderFile[] otherShaders)
     {
         CheckShadersValidity(vertexPath, fragmentPath, otherShaders);
 
@@ -24,14 +25,14 @@ public static class ShaderManager
 
         var otherShaderInfos = otherShaders.Select(x => LoadShader(x.FilePath, x.Type));
 
-        var component = CreateShaderProgram(name, vertex.Id, fragment.Id, [..otherShaderInfos.Select(x => x.Id)]);
+        var component = CreateShaderProgramComponent(name, vertex.Id, fragment.Id, [..otherShaderInfos.Select(x => x.Id)]);
 
         _shaderPrograms.Add(programName, component);
 
         return component;
     }
 
-    private static ShaderProgramComponent CreateShaderProgram(string name, uint vertexId, uint fragmentId, uint[] otherShaderIds)
+    private static ShaderProgramComponent CreateShaderProgramComponent(string name, uint vertexId, uint fragmentId, uint[] otherShaderIds)
     {
         var id = Window.GL.CreateProgram();
 
@@ -47,7 +48,7 @@ public static class ShaderManager
         return new ShaderProgramComponent(id, name, vertexId, fragmentId, otherShaderIds);
     }
 
-    private static ShaderInfo LoadShader(string filePath, ShaderType type)
+    private ShaderInfo LoadShader(string filePath, ShaderType type)
     {
         if (_shaders.Any(x => x.FilePath == filePath))
             return _shaders.First(x => x.FilePath == filePath);
@@ -82,7 +83,7 @@ public static class ShaderManager
         return shaderInfo;
     }
 
-    public static void CompileShader(uint shaderId)
+    private static void CompileShader(uint shaderId)
     {
         Window.GL.CompileShader(shaderId);
 
@@ -94,22 +95,22 @@ public static class ShaderManager
         }
     }
 
-    public static void CompileAllShaders()
-    {
-        Parallel.ForEach(_shaders, (shader) => CompileShader(shader.Id));
-    }
+    //public static void CompileAllShaders()
+    //{
+    //    Parallel.ForEach(_shaders, (shader) => CompileShader(shader.Id));
+    //}
 
-    public static void AttachShaderToProgram(uint shaderId, uint programId)
+    private static void AttachShaderToProgram(uint shaderId, uint programId)
     {
         Window.GL.AttachShader(programId, shaderId);
     }
 
-    public static void DetachShaderFromProgram(uint shaderId, uint programId)
+    private static void DetachShaderFromProgram(uint shaderId, uint programId)
     {
         Window.GL.DetachShader(programId, shaderId);
     }
 
-    public static void DeleteShader(uint shaderId)
+    private static void DeleteShader(uint shaderId)
     {
         Window.GL.DeleteShader(shaderId);
     }
@@ -125,14 +126,14 @@ public static class ShaderManager
         if (string.IsNullOrEmpty(vertexPath))
             throw new ArgumentNullException(nameof(vertexPath));
 
-        if (!File.Exists(vertexPath))
-            throw new FileNotFoundException();
+        //if (!File.Exists(vertexPath))
+        //    throw new FileNotFoundException(null, vertexPath);
 
         if (string.IsNullOrEmpty(fragmentPath))
             throw new ArgumentNullException(nameof(fragmentPath));
 
-        if (!File.Exists(fragmentPath))
-            throw new FileNotFoundException();
+        //if (!File.Exists(fragmentPath))
+        //    throw new FileNotFoundException(null, fragmentPath);
 
         if (otherShaders.Any(x => x.Type == ShaderType.Vertex || x.Type == ShaderType.Fragment))
             throw new InvalidDataException("A shader program cannot contain more than one vertex or fragment shader!");
@@ -144,7 +145,7 @@ public static class ShaderManager
             throw new FileNotFoundException();
     }
 
-    public static void LinkShaderProgram(uint programId)
+    private static void LinkShaderProgram(uint programId)
     {
         Window.GL.LinkProgram(programId);
 
@@ -241,52 +242,69 @@ public static class ShaderManager
         return string.Join(';', paths);
     }
 
-    private static void ReloadShader(ShaderInfo shaderInfo)
+    private void ReloadShader(ShaderInfo oldShader)
     {
-        var programsContainingShader = _shaderPrograms.Where(x => shaderInfo.Type switch
-        {
-            ShaderType.Vertex => x.Value.VertexId == shaderInfo.Id,
-            ShaderType.Fragment => x.Value.FragmentId == shaderInfo.Id,
-            _ => x.Value.OtherIds.Contains(shaderInfo.Id)
-        });
+        DeleteShader(oldShader.Id);
 
-        if (!programsContainingShader.Any()) return;
-
-        DisposeShader(shaderInfo.Id, programsContainingShader.Select(x => x.Value.Id).ToArray());
-
-        // znovu nacist a zkompilovat shader
-        _shaders.Remove(shaderInfo);
-
-        var newShader = LoadShader(shaderInfo.FilePath, shaderInfo.Type);
+        var newShader = LoadShader(oldShader.FilePath, oldShader.Type);
         CompileShader(newShader.Id);
 
-        // smazat shader programy
-        // znovu vytvorit shader programy se vsemi puvodnimi shadery (nahradit pouze id noveho, jinak pouzit existujici id ostatnich shaderu)
-        var newPrograms = new List<ShaderProgramComponent>();
-        foreach (var programKvp in programsContainingShader)
+        _shaders[_shaders.IndexOf(oldShader)] = newShader;
+
+        var programKvps = GetAllProgramKvpsContainingShader(oldShader);
+        foreach (var programKvp in programKvps)
         {
             var program = programKvp.Value;
-            DisposeShaderProgram(program.Id);
-            _shaderPrograms.Remove(programKvp.Key);
 
-            var vertexId   = newShader.Type is ShaderType.Vertex   ? newShader.Id : program.VertexId;
-            var fragmentId = newShader.Type is ShaderType.Fragment ? newShader.Id : program.FragmentId;
-            var otherIds   = newShader.Type is ShaderType.Vertex or ShaderType.Fragment
-                                ? program.OtherIds
-                                : program.OtherIds.Where(x => x != shaderInfo.Id).Append(newShader.Id).ToArray();
+            DetachShaderFromProgram(oldShader.Id, program.Id);
+            AttachShaderToProgram(newShader.Id, program.Id);
+            
+            if (oldShader.Type == ShaderType.Vertex)
+                program.VertexId = newShader.Id;
+            else if (oldShader.Type == ShaderType.Fragment)
+                program.FragmentId = newShader.Id;
+            else
+            {
+                for (int j = 0; j < program.OtherIds.Length; j++)
+                {
+                    if (program.OtherIds[j] == oldShader.Id)
+                    {
+                        program.OtherIds[j] = newShader.Id;
+                        break;
+                    }
+                }
+            }
 
-            newPrograms.Add(CreateShaderProgram(program.Name, vertexId, fragmentId, otherIds));
+            LinkShaderProgram(program.Id);
+
+            _shaderPrograms[programKvp.Key] = program;
+
+            entityStore.Query<ShaderProgramComponent>()
+                       .ForEach((components, entities) =>
+            {
+                var cb = entityStore.GetCommandBuffer().Synced;
+                for (int i = 0; i < entities.Length; i++)
+                {
+                    if (components[i].Id != program.Id)
+                        break;
+
+                    cb.AddComponent(entities.Ids[i], program);
+                }
+            }).RunParallel();
         }
-
-        // nahradit id programu a shaderu v komponentech
-
-        // projit vsechny entity s shader componentem a aktualizovat
-
-        // aktualizovat program componenty v cachi
-        // vlozit nove shader info do cache
     }
 
-    public static void DisposeShader(uint shaderId, uint[] programIds)
+    private static KeyValuePair<string, ShaderProgramComponent>[] GetAllProgramKvpsContainingShader(ShaderInfo shaderInfo)
+    {
+        return _shaderPrograms.Where(x => shaderInfo.Type switch
+        {
+            ShaderType.Vertex   => x.Value.VertexId   == shaderInfo.Id,
+            ShaderType.Fragment => x.Value.FragmentId == shaderInfo.Id,
+            _                   => x.Value.OtherIds.Contains(shaderInfo.Id)
+        }).ToArray();
+    }
+
+    private static void DisposeShader(uint shaderId, uint[] programIds)
     {
         foreach (var programId in programIds)
         {
@@ -295,35 +313,27 @@ public static class ShaderManager
         Window.GL.DeleteShader(shaderId);
     }
 
-    public static void DisposeShaderProgram(uint programId)
-    {
-        Window.GL.DeleteProgram(programId);
-    }
-
     public static void Dispose()
     {
         foreach (var shader in _shaders)
         {
-            var programsContainingShader = _shaderPrograms.Values.Where(x => shader.Type switch
-            {
-                ShaderType.Vertex => x.VertexId == shader.Id,
-                ShaderType.Fragment => x.FragmentId == shader.Id,
-                _ => x.OtherIds.Contains(shader.Id)
-            });
+            var programsContainingShader = GetAllProgramKvpsContainingShader(shader);
 
-            if (programsContainingShader.Any())
+            if (programsContainingShader.Length > 0)
             {
-                DisposeShader(shader.Id, programsContainingShader.Select(x => x.Id).ToArray());
+                DisposeShader(shader.Id, programsContainingShader.Select(x => x.Value.Id).ToArray());
             }
 
             FileChangeWatcher.UnsubscribeFromFileChanges(shader.FilePath);
         }
         foreach (var program in _shaderPrograms.Values)
         {
-            DisposeShaderProgram(program.Id);
+            Window.GL.DeleteProgram(program.Id);
         }
 
         _shaders.Clear();
         _shaderPrograms.Clear();
+
+        GC.Collect();
     }
 }

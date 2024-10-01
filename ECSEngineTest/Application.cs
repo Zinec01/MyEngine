@@ -2,7 +2,7 @@
 
 public class Application : IDisposable
 {
-    public Window MainWindow { get; }
+    public Window MainWindow { get; } //TODO: make private and introduce window events instead
 
     private readonly List<Scene> _scenes = [];
     public IReadOnlyList<Scene> Scenes => _scenes;

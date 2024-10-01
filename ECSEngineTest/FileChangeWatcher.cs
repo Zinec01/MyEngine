@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ECSEngineTest;
+﻿namespace ECSEngineTest;
 
 public static class FileChangeWatcher
 {
