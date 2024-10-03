@@ -13,7 +13,9 @@ public class Window
 
     public WindowState State => _window.WindowState;
 
-    public event EventHandler OnLoad;
+    public event Action OnLoad;
+    internal event EventHandler<double> OnUpdate;
+    internal event EventHandler<double> OnRender;
 
     public Window(WindowSettings settings)
     {
@@ -53,8 +55,7 @@ public class Window
             };
         }
 
-        //TODO: WindowClosed Event
-        OnLoad?.Invoke(this, EventArgs.Empty);
+        OnLoad?.Invoke();
     }
 
     private void OnWindowUpdate(double dt)

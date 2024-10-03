@@ -2,7 +2,7 @@
 
 public class Application : IDisposable
 {
-    public Window MainWindow { get; } //TODO: make private and introduce window events instead
+    public Window MainWindow { get; }
 
     private readonly List<Scene> _scenes = [];
     public IReadOnlyList<Scene> Scenes => _scenes;
@@ -17,7 +17,12 @@ public class Application : IDisposable
     public Scene CreateScene(string name)
     {
         var scene = new Scene(name);
+
+        MainWindow.OnRender += scene.OnRender;
+        MainWindow.OnUpdate += scene.OnUpdate;
+        
         _scenes.Add(scene);
+
         return scene;
     }
 

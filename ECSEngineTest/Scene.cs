@@ -28,6 +28,16 @@ public class Scene : IDisposable
         ShaderManager = new(_store);
     }
 
+    internal void OnUpdate(object? sender, double deltaTime)
+    {
+
+    }
+
+    internal void OnRender(object? sender, double deltaTime)
+    {
+
+    }
+
     public void Dispose()
     {
         Loader.Dispose();

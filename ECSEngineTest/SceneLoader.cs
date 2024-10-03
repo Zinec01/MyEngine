@@ -215,14 +215,3 @@ public class SceneLoader(EntityStore entityStore) : IDisposable
         _assimp.Dispose();
     }
 }
-
-[Flags]
-public enum SceneLoadFlags
-{
-    None = 0,
-    Meshes = 1,
-    Lights = 2,
-    WorldTransforms = 4,
-
-    Everything = (1 << (4/*num of other enum values*/ - 1)) - 1
-}

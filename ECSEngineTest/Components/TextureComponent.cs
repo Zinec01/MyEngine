@@ -2,8 +2,8 @@
 
 namespace ECSEngineTest.Components;
 
-public struct TextureComponent(uint id, string filePath) : IComponent
+public readonly struct TextureComponent(uint id, string filePath) : IComponent
 {
-    public uint Id { get; set; } = id;
-    public string FilePath { get; set; } = filePath;
+    public uint Id { get; } = id;
+    public string FilePath { get; } = filePath;
 }

@@ -14,7 +14,7 @@ internal class Program
             Title = "Hell yeah",
             VSync = true
         });
-        app.MainWindow.OnLoad += (sender, args) =>
+        app.MainWindow.OnLoad += () =>
         {
             var scene = app.CreateScene("Test");
             //scene.Loader.LoadScene(@"C:\Users\Zinec\Desktop\whole_scene.glb", SceneLoadFlags.Meshes);//.Everything);
