@@ -13,7 +13,7 @@ public class ShaderManager(EntityStore entityStore)
 
     public ShaderProgramComponent GetShaderProgram(string name, string vertexPath, string fragmentPath, params ShaderFile[] otherShaders)
     {
-        CheckShadersValidity(vertexPath, fragmentPath, otherShaders);
+        CheckShadersValidity(ref vertexPath, ref fragmentPath, ref otherShaders);
 
         var programName = GenShaderProgramName(vertexPath, fragmentPath, otherShaders.Select(x => x.FilePath).ToArray());
 
@@ -121,28 +121,30 @@ public class ShaderManager(EntityStore entityStore)
         AttachShaderToProgram(shaderId, programId);
     }
 
-    private static void CheckShadersValidity(string vertexPath, string fragmentPath, ShaderFile[] otherShaders)
+    private static void CheckShadersValidity(ref string vertexPath, ref string fragmentPath, ref ShaderFile[] otherShaders)
     {
-        if (string.IsNullOrEmpty(vertexPath))
-            throw new ArgumentNullException(nameof(vertexPath));
-
-        //if (!File.Exists(vertexPath))
-        //    throw new FileNotFoundException(null, vertexPath);
-
-        if (string.IsNullOrEmpty(fragmentPath))
-            throw new ArgumentNullException(nameof(fragmentPath));
-
-        //if (!File.Exists(fragmentPath))
-        //    throw new FileNotFoundException(null, fragmentPath);
+        CheckShaderPathValidity(ref vertexPath);
+        CheckShaderPathValidity(ref fragmentPath);
 
         if (otherShaders.Any(x => x.Type == ShaderType.Vertex || x.Type == ShaderType.Fragment))
             throw new InvalidDataException("A shader program cannot contain more than one vertex or fragment shader!");
 
-        if (otherShaders.Any(x => string.IsNullOrEmpty(x.FilePath)))
-            throw new ArgumentNullException(nameof(otherShaders));
+        for (int i = 0; i < otherShaders.Length; i++)
+        {
+            CheckShaderPathValidity(ref otherShaders[i].FilePath);
+        }
+    }
 
-        if (otherShaders.Any(x => !File.Exists(x.FilePath)))
-            throw new FileNotFoundException();
+    private static void CheckShaderPathValidity(ref string filePath)
+    {
+        if (string.IsNullOrEmpty(filePath))
+            throw new ArgumentNullException(nameof(filePath));
+
+        if (!Path.IsPathFullyQualified(filePath))
+            filePath = Path.GetFullPath(filePath);
+
+        if (!File.Exists(filePath))
+            throw new FileNotFoundException(null, filePath);
     }
 
     private static void LinkShaderProgram(uint programId)
