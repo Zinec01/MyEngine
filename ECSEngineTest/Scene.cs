@@ -24,8 +24,8 @@ public class Scene : IDisposable
         _store = new EntityStore { JobRunner = _runner };
 
         //EntityFactory = new(_store);
-        Loader = new(_store);
         ShaderManager = new(_store);
+        Loader = new(_store, ShaderManager);
     }
 
     internal void OnUpdate(object? sender, double deltaTime)

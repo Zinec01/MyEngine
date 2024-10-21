@@ -7,6 +7,7 @@ public enum SceneLoadFlags
     Meshes = 1,
     Lights = 2,
     WorldTransforms = 4,
+    Cameras = 8,
 
-    Everything = (1 << (4/*num of other enum values*/ - 1)) - 1
+    Everything = (1 << (5/*num of other enum values*/ - 1)) - 1
 }

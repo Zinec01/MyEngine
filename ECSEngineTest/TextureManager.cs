@@ -29,7 +29,25 @@ public static class TextureManager
         return _textures.Any(x => x.FilePath == texturePath);
     }
 
-    internal static unsafe TextureComponent LoadTexture(string texturePath, byte[]? data = null)
+    internal static unsafe TextureComponent LoadTexture(string texturePath)
+    {
+        var img = ImageResult.FromMemory(File.ReadAllBytes(texturePath), ColorComponents.RedGreenBlueAlpha);
+
+        fixed (byte* dataPtr = img.Data)
+        {
+            return LoadTexture(texturePath, dataPtr, (uint)img.Width, (uint)img.Height, PixelFormat.Rgba);
+        }
+    }
+
+    internal static unsafe TextureComponent LoadTexture(string texturePath, byte[] data)
+    {
+        fixed (byte* dataPtr = data)
+        {
+            return LoadTexture(texturePath, dataPtr, (uint)data.Length, 0, PixelFormat.Rgba);
+        }
+    }
+
+    internal static unsafe TextureComponent LoadTexture(string texturePath, byte* data, uint imgWidth, uint imgHeight, PixelFormat pixelFormat)
     {
         if (IsLoaded(texturePath))
             return GetTexture(texturePath);
@@ -38,12 +56,7 @@ public static class TextureManager
 
         Window.GL.BindTexture(TextureTarget.Texture2D, id);
 
-        var imgRes = ImageResult.FromMemory(data != null && data.Length > 0 ? data : File.ReadAllBytes(texturePath), ColorComponents.RedGreenBlueAlpha);
-
-        fixed (byte* dataPtr = imgRes.Data)
-        {
-            Window.GL.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba, (uint)imgRes.Width, (uint)imgRes.Height, 0, PixelFormat.Rgba, GLEnum.UnsignedByte, dataPtr);
-        }
+        Window.GL.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba, imgWidth, imgHeight, 0, pixelFormat, GLEnum.UnsignedByte, data);
 
         Window.GL.TextureParameter(id, GLEnum.TextureWrapS, (int)TextureWrapMode.MirroredRepeat);
         Window.GL.TextureParameter(id, GLEnum.TextureWrapT, (int)TextureWrapMode.MirroredRepeat);

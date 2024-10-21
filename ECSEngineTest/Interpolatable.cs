@@ -1,15 +1,51 @@
-﻿namespace ECSEngineTest;
+﻿using System.Numerics;
 
-public struct Interpolatable<T> where T : unmanaged
+namespace ECSEngineTest;
+
+public struct Interpolatable<T> where T : struct
 {
-    public T Previous { get; set; } = default;
-    public T Current { get; set; } = default;
-    public T Target { get; set; } = default;
+    public T Previous { get; private set; }
+    public T Current { get; private set; }
+    public T Target { get; set; }
 
-    public Interpolatable() { }
-
-    public Interpolatable(T initialValue) : this()
+    public Interpolatable(T initialValue)
     {
-        Current = initialValue;
+        Previous = Current = Target = initialValue;
     }
+
+    public Interpolatable() : this(default) { }
+
+    public void Lerp(float amount)
+    {
+        Previous = Current;
+        Current = Lerp(Current, Target, amount);
+    }
+
+    private static T Lerp(T a, T b, float t)
+    {
+        object res;
+
+        if (a is float af && b is float bf)
+            res = float.Lerp(af, bf, t);
+
+        else if (a is Vector2 av2 && b is Vector2 bv2)
+            res = Vector2.Lerp(av2, bv2, t);
+
+        else if (a is Vector3 av3 && b is Vector3 bv3)
+            res = Vector3.Lerp(av3, bv3, t);
+
+        else if (a is Vector4 av4 && b is Vector4 bv4)
+            res = Vector4.Lerp(av4, bv4, t);
+
+        else if (a is Quaternion aq && b is Quaternion bq)
+            res = Quaternion.Slerp(aq, bq, t);
+
+        else
+            throw new ArgumentException($"Interpolation not supported for type {typeof(T)}");
+
+        return (T)res;
+    }
+
+    public override readonly string ToString()
+        => Previous.ToString() + "  ->  " + Current.ToString() + "  ->  " + Target.ToString();
 }

@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace ECSEngineTest;
 
-public class SceneLoader(EntityStore entityStore) : IDisposable
+public class SceneLoader(EntityStore entityStore, ShaderManager shaderManager) : IDisposable
 {
     private readonly string[] SUPPORTED_FORMATS = [".obj", ".glb", ".gltf"];
 
@@ -18,8 +18,8 @@ public class SceneLoader(EntityStore entityStore) : IDisposable
 
     public unsafe void LoadScene(string filePath, SceneLoadFlags flags = SceneLoadFlags.Everything)
     {
-        if (!SUPPORTED_FORMATS.Contains(Path.GetExtension(filePath)))
-            throw new NotImplementedException("Format not yet supported");
+        //if (!SUPPORTED_FORMATS.Contains(Path.GetExtension(filePath)))
+        //    throw new NotImplementedException("Format not yet supported");
 
         var scene = LoadSceneFromFile(filePath);
 
@@ -32,6 +32,9 @@ public class SceneLoader(EntityStore entityStore) : IDisposable
 
         if (flags.HasFlag(SceneLoadFlags.Lights))
             processed += ProcessLights(scene);
+
+        if (flags.HasFlag(SceneLoadFlags.Cameras))
+            processed += ProcessCameras(scene);
 
         if (processed > 0)
             FileChangeWatcher.SubscribeForFileChanges(filePath, (_, _) => SceneFileChanged(filePath));
@@ -47,7 +50,8 @@ public class SceneLoader(EntityStore entityStore) : IDisposable
         var scene = _assimp.ImportFile(filePath, (uint)(PostProcessSteps.Triangulate
                                                         | PostProcessSteps.GenerateSmoothNormals
                                                         | PostProcessSteps.FlipUVs
-                                                        | PostProcessSteps.JoinIdenticalVertices));
+                                                        | PostProcessSteps.JoinIdenticalVertices
+                                                        | PostProcessSteps.ImproveCacheLocality));
 
         if (scene == null || scene->MFlags == Assimp.SceneFlagsIncomplete || scene->MRootNode == null)
         {
@@ -62,18 +66,17 @@ public class SceneLoader(EntityStore entityStore) : IDisposable
     {
         Entity? entity = null;
         uint processed = 0;
-        if (node->MNumMeshes > 0 && node->MParent is not null)
+        if (node->MNumMeshes > 0)
         {
             entity = _entityStore.CreateEntity(new EntityName(node->MName.ToString()));
             entity.Value.AddTag<MeshObjectTag>();
 
-            var transformComponent = new TransformComponent();
-            if (loadTransforms)
-                transformComponent.WorldTransform = node->MTransformation;
+            entity.Value.AddComponent(loadTransforms ? new TransformComponent(node->MTransformation) : new TransformComponent());
+            entity.Value.AddComponent(shaderManager.GetShaderProgram("Default",
+                                                                     @"..\..\..\..\MyEngine\Shaders\basic_light.vert",
+                                                                     @"..\..\..\..\MyEngine\Shaders\basic_light.frag"));
 
-            entity.Value.AddComponent(transformComponent);
-
-            if (node->MParent->MNumMeshes > 0)
+            if (node->MParent is not null && node->MParent->MNumMeshes > 0)
                 parentEntity?.AddChild(entity.Value);
 
             for (int i = 0; i < node->MNumMeshes; i++)
@@ -95,11 +98,18 @@ public class SceneLoader(EntityStore entityStore) : IDisposable
 
     private unsafe void ProcessMesh(Entity parentEntity, Mesh* mesh, Silk.NET.Assimp.Scene* scene)
     {
-        var entity = _entityStore.CreateEntity();
+        var entity = _entityStore.CreateEntity(new EntityName(mesh->MName));
         parentEntity.AddChild(entity);
 
         var material = scene->MMaterials[mesh->MMaterialIndex];
         var texCount = _assimp.GetMaterialTextureCount(material, TextureType.Diffuse);
+        //texCount += _assimp.GetMaterialTextureCount(material, TextureType.Ambient);
+        //texCount += _assimp.GetMaterialTextureCount(material, TextureType.BaseColor);
+        //texCount += _assimp.GetMaterialTextureCount(material, TextureType.EmissionColor);
+        //texCount += _assimp.GetMaterialTextureCount(material, TextureType.Emissive);
+        //texCount += _assimp.GetMaterialTextureCount(material, TextureType.Metalness);
+        //texCount += _assimp.GetMaterialTextureCount(material, TextureType.Normals);
+        //texCount += _assimp.GetMaterialTextureCount(material, TextureType.Specular);
 
         if (texCount > 0)
         {
@@ -156,8 +166,10 @@ public class SceneLoader(EntityStore entityStore) : IDisposable
                     }
                     else
                     {
-                        var textureData = new Span<byte>((byte*)texture->PcData, (int)texture->MWidth * sizeof(Texel));
-                        textureComponent = TextureManager.LoadTexture(texturePath, textureData.ToArray());
+                        //var textureData = new Span<byte>((byte*)texture->PcData, (int)texture->MWidth * sizeof(Texel));
+                        //textureComponent = TextureManager.LoadTexture(texturePath, textureData.ToArray());
+
+                        textureComponent = TextureManager.LoadTexture(texturePath, (byte*)texture->PcData, texture->MWidth * (uint)sizeof(Texel), texture->MHeight, Silk.NET.OpenGL.PixelFormat.Bgra);
                     }
                 }
                 else
@@ -185,6 +197,7 @@ public class SceneLoader(EntityStore entityStore) : IDisposable
         for (int i = 0; i < scene->MNumLights; i++)
         {
             var light = scene->MLights[i];
+            var lightNode = GetNodeByName(scene->MRootNode, light->MName.ToString());
 
             var entity = _entityStore.CreateEntity(new EntityName(light->MName));
             entity.AddTag<LightTag>();
@@ -196,10 +209,56 @@ public class SceneLoader(EntityStore entityStore) : IDisposable
                 OuterConeAngle = light->MAngleOuterCone,
             });
             entity.AddComponent(new ColorComponent(new Vector4(light->MColorDiffuse, 1f)));
-            entity.AddComponent(new TransformComponent { Position = new Interpolatable<Vector3>(light->MPosition) });
+            entity.AddComponent(new TransformComponent(lightNode->MTransformation));
         }
 
         return scene->MNumLights;
+    }
+
+    private unsafe uint ProcessCameras(Silk.NET.Assimp.Scene* scene)
+    {
+        for (int i = 0; i < scene->MNumCameras; i++)
+        {
+            var camera = scene->MCameras[i];
+            var cameraNode = GetNodeByName(scene->MRootNode, camera->MName.ToString());
+
+            var entity = _entityStore.CreateEntity(new EntityName(camera->MName));
+            entity.AddTag<CameraTag>();
+            entity.AddComponent(new CameraComponent
+            {
+                AspectRatio = camera->MAspect,
+                NearPlane = camera->MClipPlaneNear,
+                FarPlane = camera->MClipPlaneFar,
+                FieldOfView = camera->MHorizontalFOV,
+                Up = camera->MUp,
+                Front = camera->MLookAt
+            });
+            entity.AddComponent(new TransformComponent(cameraNode->MTransformation));
+        }
+
+        return scene->MNumCameras;
+    }
+
+    private unsafe Node* GetNodeByName(Node* node, string nodeName)
+    {
+        if (node->MName.ToString() == nodeName)
+            return node;
+
+        for (int i = 0; i < node->MNumChildren; i++)
+        {
+            var childNode = node->MChildren[i];
+            if (childNode->MName.ToString() == nodeName)
+                return childNode;
+        }
+
+        for (int i = 0; i < node->MNumChildren; i++)
+        {
+            var result = GetNodeByName(node->MChildren[i], nodeName);
+            if (result != null)
+                return result;
+        }
+
+        return null;
     }
 
     private unsafe void MeshFileChanged(string filePath)
