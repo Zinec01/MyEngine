@@ -15,28 +15,10 @@ public struct TransformComponent : IComponent
     {
         WorldTransform = transform;
 
-        Position = new Interpolatable<Vector3>(new Vector3(transform.M14, transform.M24, transform.M34));
+        Matrix4x4.Decompose(transform, out var scale, out var rotation, out var translation);
 
-        transform.M14 = transform.M24 = transform.M34 = 0.0f;
-
-        var col1Len = new Vector3(transform.M11, transform.M21, transform.M31).Length();
-        var col2Len = new Vector3(transform.M12, transform.M22, transform.M32).Length();
-        var col3Len = new Vector3(transform.M13, transform.M23, transform.M33).Length();
-
-        Scale = new Interpolatable<Vector3>(new Vector3(col1Len, col2Len, col3Len));
-
-        transform.M11 /= col1Len;
-        transform.M21 /= col1Len;
-        transform.M31 /= col1Len;
-
-        transform.M12 /= col2Len;
-        transform.M22 /= col2Len;
-        transform.M32 /= col2Len;
-
-        transform.M13 /= col3Len;
-        transform.M23 /= col3Len;
-        transform.M33 /= col3Len;
-
-        Rotation = new Interpolatable<Quaternion>(Quaternion.CreateFromRotationMatrix(transform));
+        Position = new Interpolatable<Vector3>(translation);
+        Rotation = new Interpolatable<Quaternion>(rotation);
+        Scale = new Interpolatable<Vector3>(scale);
     }
 }
