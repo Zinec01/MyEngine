@@ -261,6 +261,19 @@ public class SceneLoader(EntityStore entityStore, ShaderManager shaderManager) :
         return null;
     }
 
+    private unsafe Matrix4x4 GetNodeTransform(Node* node)
+    {
+        var transform = node->MTransformation;
+
+        while (node->MParent != null)
+        {
+            node = node->MParent;
+            transform *= node->MTransformation;
+        }
+
+        return transform;
+    }
+
     private unsafe void MeshFileChanged(string filePath)
     {
     }
