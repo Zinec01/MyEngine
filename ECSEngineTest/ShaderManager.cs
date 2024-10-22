@@ -5,11 +5,24 @@ using System.Numerics;
 
 namespace ECSEngineTest;
 
-public class ShaderManager(EntityStore entityStore)
+public class ShaderManager
 {
+    private readonly EntityStore _entityStore;
+
     private static readonly List<ShaderInfo> _shaders = [];
     private static readonly Dictionary<string, ShaderProgramComponent> _shaderPrograms = [];
     private static readonly Dictionary<string, int> _uniformLocations = [];
+
+    public ShaderProgramComponent Default { get; }
+
+    public ShaderManager(EntityStore entityStore)
+    {
+        _entityStore = entityStore;
+
+        Default = GetShaderProgram("Default",
+                                   @"..\..\..\..\MyEngine\Shaders\basic_light.vert",
+                                   @"..\..\..\..\MyEngine\Shaders\basic_light.frag");
+    }
 
     public ShaderProgramComponent GetShaderProgram(string name, string vertexPath, string fragmentPath, params ShaderFile[] otherShaders)
     {
@@ -281,10 +294,10 @@ public class ShaderManager(EntityStore entityStore)
 
             _shaderPrograms[programKvp.Key] = program;
 
-            entityStore.Query<ShaderProgramComponent>()
-                       .ForEach((components, entities) =>
+            _entityStore.Query<ShaderProgramComponent>()
+                        .ForEach((components, entities) =>
             {
-                var cb = entityStore.GetCommandBuffer().Synced;
+                var cb = _entityStore.GetCommandBuffer().Synced;
                 for (int i = 0; i < entities.Length; i++)
                 {
                     if (components[i].Id != program.Id)

@@ -72,9 +72,7 @@ public class SceneLoader(EntityStore entityStore, ShaderManager shaderManager) :
             entity.Value.AddTag<MeshObjectTag>();
 
             entity.Value.AddComponent(loadTransforms ? new TransformComponent(node->MTransformation) : new TransformComponent());
-            entity.Value.AddComponent(shaderManager.GetShaderProgram("Default",
-                                                                     @"..\..\..\..\MyEngine\Shaders\basic_light.vert",
-                                                                     @"..\..\..\..\MyEngine\Shaders\basic_light.frag"));
+            entity.Value.AddComponent(shaderManager.Default);
 
             if (node->MParent is not null && node->MParent->MNumMeshes > 0)
                 parentEntity?.AddChild(entity.Value);
@@ -102,6 +100,14 @@ public class SceneLoader(EntityStore entityStore, ShaderManager shaderManager) :
         parentEntity.AddChild(entity);
 
         var material = scene->MMaterials[mesh->MMaterialIndex];
+
+        AssimpString materialName;
+        _assimp.GetMaterialString(material, Assimp.MaterialNameBase, 0, 0, &materialName);
+
+        // TODO: Handle material properties
+        entity.AddComponent(new MaterialComponent { Name = materialName });
+
+        //TODO: Handle different texture types
         var texCount = _assimp.GetMaterialTextureCount(material, TextureType.Diffuse);
         //texCount += _assimp.GetMaterialTextureCount(material, TextureType.Ambient);
         //texCount += _assimp.GetMaterialTextureCount(material, TextureType.BaseColor);
@@ -261,21 +267,18 @@ public class SceneLoader(EntityStore entityStore, ShaderManager shaderManager) :
         return null;
     }
 
-    private unsafe Matrix4x4 GetNodeTransform(Node* node)
+    private unsafe Matrix4x4 GetNodeFinalTransform(Node* node)
     {
         var transform = node->MTransformation;
 
         while (node->MParent != null)
         {
             node = node->MParent;
-            transform *= node->MTransformation;
+            if (node->MTransformation != Matrix4x4.Identity)
+                transform *= node->MTransformation;
         }
 
         return transform;
-    }
-
-    private unsafe void MeshFileChanged(string filePath)
-    {
     }
 
     private unsafe void SceneFileChanged(string filePath)

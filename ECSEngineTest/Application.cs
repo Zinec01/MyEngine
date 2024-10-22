@@ -4,6 +4,8 @@ public class Application : IDisposable
 {
     public Window MainWindow { get; }
 
+    public static DateTime AppStart { get; private set; }
+
     private readonly List<Scene> _scenes = [];
     public IReadOnlyList<Scene> Scenes => _scenes;
     public int? ActiveSceneId { get; set; }
@@ -28,6 +30,7 @@ public class Application : IDisposable
 
     public void Run()
     {
+        AppStart = DateTime.Now;
         MainWindow?.Run();
     }
 

@@ -1,4 +1,5 @@
 ﻿using Friflo.Engine.ECS;
+using Friflo.Engine.ECS.Systems;
 
 namespace ECSEngineTest;
 
@@ -8,6 +9,7 @@ public class Scene : IDisposable
 
     private readonly ParallelJobRunner _runner;
     private readonly EntityStore _store;
+    private readonly SystemRoot _rootSystem;
 
     public uint Id { get; }
     public string Name { get; set; }
@@ -26,11 +28,16 @@ public class Scene : IDisposable
         //EntityFactory = new(_store);
         ShaderManager = new(_store);
         Loader = new(_store, ShaderManager);
+
+        _rootSystem = new SystemRoot(_store)
+        {
+            //new TestSystem()
+        };
     }
 
     internal void OnUpdate(object? sender, double deltaTime)
     {
-
+        _rootSystem.Update(new UpdateTick((float)deltaTime, 0/*(float)(DateTime.Now - Application.AppStart).TotalSeconds*/));
     }
 
     internal void OnRender(object? sender, double deltaTime)
@@ -42,5 +49,19 @@ public class Scene : IDisposable
     {
         Loader.Dispose();
         _runner.Dispose();
+    }
+}
+
+public class TestSystem : QuerySystem<EntityName>
+{
+    protected override void OnUpdate()
+    {
+        Query.ForEach((Chunk<EntityName> components, ChunkEntities entities) =>
+        {
+            for (int i = 0; i < entities.Length; i++)
+            {
+                Console.WriteLine(components[i].value);
+            }
+        }).RunParallel();
     }
 }

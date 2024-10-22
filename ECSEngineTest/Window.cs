@@ -61,11 +61,13 @@ public class Window
     private void OnWindowUpdate(double dt)
     {
         //TODO: Update Event
+        OnUpdate?.Invoke(this, dt);
     }
 
     private void OnWindowRender(double dt)
     {
         //TODO: Render Event
+        OnRender?.Invoke(this, dt);
     }
 
     private void OnWindowFramebufferResize(Vector2D<int> newSize)
