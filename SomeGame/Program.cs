@@ -17,7 +17,8 @@ internal class Program
         app.MainWindow.OnLoad += () =>
         {
             var scene = app.CreateScene("Test");
-            scene.Loader.LoadScene(@"C:\Users\Zinec\Desktop\chest_plane_light_camera.fbx");
+            scene.Loader.LoadScene(@"..\..\..\..\ECSEngineTest\Models\concrete_trash_bin.glb");
+            //scene.Loader.LoadScene(@"C:\Users\Zinec\Desktop\chest_plane_light_camera.fbx");
             //scene.Loader.LoadScene(@"C:\Users\Zinec\Desktop\chest_plane_light_camera.glb");
             //scene.Loader.LoadScene(@"C:\Users\Zinec\Desktop\spider_pink_cube_light.glb");
             //scene.Loader.LoadScene(@"C:\Users\Zinec\Desktop\spider_light.glb");

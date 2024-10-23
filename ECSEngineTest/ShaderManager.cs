@@ -1,4 +1,5 @@
 ﻿using ECSEngineTest.Components;
+using ECSEngineTest.Helpers;
 using Friflo.Engine.ECS;
 using Silk.NET.OpenGL;
 using System.Numerics;
@@ -136,28 +137,20 @@ public class ShaderManager
 
     private static void CheckShadersValidity(ref string vertexPath, ref string fragmentPath, ref ShaderFile[] otherShaders)
     {
-        CheckShaderPathValidity(ref vertexPath);
-        CheckShaderPathValidity(ref fragmentPath);
+        if (!StringHelper.ValidateFilePath(ref vertexPath))
+            throw new FileNotFoundException(null, vertexPath);
+
+        if (!StringHelper.ValidateFilePath(ref fragmentPath))
+            throw new FileNotFoundException(null, fragmentPath);
 
         if (otherShaders.Any(x => x.Type == ShaderType.Vertex || x.Type == ShaderType.Fragment))
             throw new InvalidDataException("A shader program cannot contain more than one vertex or fragment shader!");
 
         for (int i = 0; i < otherShaders.Length; i++)
         {
-            CheckShaderPathValidity(ref otherShaders[i].FilePath);
+            if (!StringHelper.ValidateFilePath(ref otherShaders[i].FilePath))
+                throw new FileNotFoundException(null, otherShaders[i].FilePath);
         }
-    }
-
-    private static void CheckShaderPathValidity(ref string filePath)
-    {
-        if (string.IsNullOrEmpty(filePath))
-            throw new ArgumentNullException(nameof(filePath));
-
-        if (!Path.IsPathFullyQualified(filePath))
-            filePath = Path.GetFullPath(filePath);
-
-        if (!File.Exists(filePath))
-            throw new FileNotFoundException(null, filePath);
     }
 
     private static void LinkShaderProgram(uint programId)

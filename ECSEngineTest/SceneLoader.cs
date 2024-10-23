@@ -1,4 +1,5 @@
 ﻿using ECSEngineTest.Components;
+using ECSEngineTest.Helpers;
 using ECSEngineTest.Tags;
 using Friflo.Engine.ECS;
 using Silk.NET.Assimp;
@@ -9,7 +10,7 @@ namespace ECSEngineTest;
 
 public class SceneLoader(EntityStore entityStore, ShaderManager shaderManager) : IDisposable
 {
-    private readonly string[] SUPPORTED_FORMATS = [".obj", ".glb", ".gltf"];
+    private readonly string[] SUPPORTED_FORMATS = [".obj", ".glb", ".gltf", ".fbx"];
 
     private readonly Assimp _assimp = Assimp.GetApi();
     private readonly EntityStore _entityStore = entityStore;
@@ -20,6 +21,9 @@ public class SceneLoader(EntityStore entityStore, ShaderManager shaderManager) :
     {
         //if (!SUPPORTED_FORMATS.Contains(Path.GetExtension(filePath)))
         //    throw new NotImplementedException("Format not yet supported");
+
+        if (!StringHelper.ValidateFilePath(ref filePath))
+            throw new FileNotFoundException(null, filePath);
 
         var scene = LoadSceneFromFile(filePath);
 
@@ -44,9 +48,6 @@ public class SceneLoader(EntityStore entityStore, ShaderManager shaderManager) :
 
     private unsafe Silk.NET.Assimp.Scene* LoadSceneFromFile(string filePath)
     {
-        if (!System.IO.File.Exists(filePath))
-            throw new FileNotFoundException($"The specified file could not be found: {filePath}");
-
         var scene = _assimp.ImportFile(filePath, (uint)(PostProcessSteps.Triangulate
                                                         | PostProcessSteps.GenerateSmoothNormals
                                                         | PostProcessSteps.FlipUVs

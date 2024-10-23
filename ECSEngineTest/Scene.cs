@@ -1,5 +1,6 @@
 ﻿using Friflo.Engine.ECS;
 using Friflo.Engine.ECS.Systems;
+using System.Diagnostics;
 
 namespace ECSEngineTest;
 
@@ -60,7 +61,7 @@ public class TestSystem : QuerySystem<EntityName>
         {
             for (int i = 0; i < entities.Length; i++)
             {
-                Console.WriteLine(components[i].value);
+                Debug.WriteLine(components[i].value);
             }
         }).RunParallel();
     }
