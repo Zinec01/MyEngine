@@ -1,4 +1,5 @@
 ﻿using ECSEngineTest.Components;
+using ECSEngineTest.Builders;
 using Friflo.Engine.ECS;
 
 namespace ECSEngineTest;
@@ -45,13 +46,5 @@ public class EntityFactory(EntityStore store)
         return entity;
     }
 
-    public Entity CreateCamera(string? name = null)
-    {
-        var entity = CreateEntity(name);
-
-        entity.AddComponent<CameraComponent>();
-        entity.AddComponent<TransformComponent>();
-
-        return entity;
-    }
+    public CameraBuilder CreateCamera(string name) => new(store, name);
 }

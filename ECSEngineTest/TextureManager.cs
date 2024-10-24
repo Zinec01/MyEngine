@@ -75,7 +75,12 @@ public static class TextureManager
 
     public static void ActivateTexture(uint textureId)
     {
-        Window.GL.ActiveTexture(GLEnum.Texture0);
-        Window.GL.BindTexture(GLEnum.Texture2D, textureId);
+        Window.GL.ActiveTexture(TextureUnit.Texture0);
+        Window.GL.BindTexture(TextureTarget.Texture2D, textureId);
+    }
+
+    public static void DeactivateCurrentTexture()
+    {
+        Window.GL.BindTexture(TextureTarget.Texture2D, 0);
     }
 }

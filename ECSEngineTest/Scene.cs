@@ -14,7 +14,8 @@ public class Scene : IDisposable
 
     public uint Id { get; }
     public string Name { get; set; }
-    //public EntityFactory EntityFactory { get; }
+
+    public EntityFactory EntityFactory { get; }
     public SceneLoader Loader { get; }
     public ShaderManager ShaderManager { get; }
 
@@ -26,7 +27,7 @@ public class Scene : IDisposable
         _runner = new ParallelJobRunner(Environment.ProcessorCount);
         _store = new EntityStore { JobRunner = _runner };
 
-        //EntityFactory = new(_store);
+        EntityFactory = new(_store);
         ShaderManager = new(_store);
         Loader = new(_store, ShaderManager);
 
@@ -43,7 +44,7 @@ public class Scene : IDisposable
 
     internal void OnRender(object? sender, double deltaTime)
     {
-
+        Renderer.RenderScene(_store, deltaTime);
     }
 
     public void Dispose()

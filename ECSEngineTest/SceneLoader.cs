@@ -8,14 +8,21 @@ using System.Runtime.InteropServices;
 
 namespace ECSEngineTest;
 
-public class SceneLoader(EntityStore entityStore, ShaderManager shaderManager) : IDisposable
+public class SceneLoader : IDisposable
 {
     private readonly string[] SUPPORTED_FORMATS = [".obj", ".glb", ".gltf", ".fbx"];
 
     private readonly Assimp _assimp = Assimp.GetApi();
-    private readonly EntityStore _entityStore = entityStore;
+    private readonly EntityStore _entityStore;
+    private readonly ShaderManager _shaderManager;
 
     private string _currentDirectory = string.Empty;
+
+    public SceneLoader(EntityStore entityStore, ShaderManager shaderManager)
+    {
+        _entityStore = entityStore;
+        _shaderManager = shaderManager;
+    }
 
     public unsafe void LoadScene(string filePath, SceneLoadFlags flags = SceneLoadFlags.Everything)
     {
@@ -73,7 +80,7 @@ public class SceneLoader(EntityStore entityStore, ShaderManager shaderManager) :
             entity.Value.AddTag<MeshObjectTag>();
 
             entity.Value.AddComponent(loadTransforms ? new TransformComponent(node->MTransformation) : new TransformComponent());
-            entity.Value.AddComponent(shaderManager.Default);
+            entity.Value.AddComponent(_shaderManager.Default);
 
             if (node->MParent is not null && node->MParent->MNumMeshes > 0)
                 parentEntity?.AddChild(entity.Value);
@@ -228,7 +235,7 @@ public class SceneLoader(EntityStore entityStore, ShaderManager shaderManager) :
         {
             var camera = scene->MCameras[i];
             var cameraNode = GetNodeByName(scene->MRootNode, camera->MName.ToString());
-
+            
             var entity = _entityStore.CreateEntity(new EntityName(camera->MName));
             entity.AddTag<CameraTag>();
             entity.AddComponent(new CameraComponent
@@ -238,7 +245,9 @@ public class SceneLoader(EntityStore entityStore, ShaderManager shaderManager) :
                 FarPlane = camera->MClipPlaneFar,
                 FieldOfView = camera->MHorizontalFOV,
                 Up = camera->MUp,
-                Front = camera->MLookAt
+                Front = camera->MLookAt,
+                Active = !_entityStore.Entities.Any(x => x.HasComponent<CameraComponent>()
+                                                         && x.GetComponent<CameraComponent>().Active)
             });
             entity.AddComponent(new TransformComponent(cameraNode->MTransformation));
         }

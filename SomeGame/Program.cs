@@ -25,9 +25,9 @@ internal class Program
             //scene.Loader.LoadScene(@"C:\Users\Zinec\Desktop\spider_light.gltf");
             //scene.Loader.LoadScene(@"C:\Users\Zinec\Desktop\pink_cube.glb");
 
-            var program = scene.ShaderManager.GetShaderProgram("Basic",
-                                                               @"..\..\..\..\MyEngine\Shaders\basic_light.vert",
-                                                               @"..\..\..\..\MyEngine\Shaders\basic_light.frag");
+            scene.EntityFactory.CreateCamera("Main Camera")
+                               .WithPosition(new System.Numerics.Vector3(0.0f, 2.0f, -5.0f))
+                               .Build();
         };
         app.Run();
         //new Application(1280, 720, "lmao").Run();
