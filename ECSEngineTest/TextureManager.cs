@@ -35,19 +35,32 @@ public static class TextureManager
 
         fixed (byte* dataPtr = img.Data)
         {
-            return LoadTexture(texturePath, dataPtr, (uint)img.Width, (uint)img.Height, PixelFormat.Rgba);
+            return LoadTexture(texturePath, dataPtr, (uint)img.Width, (uint)img.Height);
         }
     }
 
     internal static unsafe TextureComponent LoadTexture(string texturePath, byte[] data)
     {
-        fixed (byte* dataPtr = data)
+        var img = ImageResult.FromMemory(data, ColorComponents.RedGreenBlueAlpha);
+
+        fixed (byte* dataPtr = img.Data)
         {
-            return LoadTexture(texturePath, dataPtr, (uint)data.Length, 0, PixelFormat.Rgba);
+            return LoadTexture(texturePath, dataPtr, (uint)img.Width, (uint)img.Height);
         }
     }
 
-    internal static unsafe TextureComponent LoadTexture(string texturePath, byte* data, uint imgWidth, uint imgHeight, PixelFormat pixelFormat)
+    internal static unsafe TextureComponent LoadTexture(string texturePath, byte* data, int dataLength)
+    {
+        using var ms = new UnmanagedMemoryStream(data, dataLength);
+        var img = ImageResult.FromStream(ms, ColorComponents.RedGreenBlueAlpha);
+
+        fixed (byte* dataPtr = img.Data)
+        {
+            return LoadTexture(texturePath, dataPtr, (uint)img.Width, (uint)img.Height);
+        }
+    }
+
+    internal static unsafe TextureComponent LoadTexture(string texturePath, byte* data, uint imgWidth, uint imgHeight)
     {
         if (IsLoaded(texturePath))
             return GetTexture(texturePath);
@@ -56,7 +69,7 @@ public static class TextureManager
 
         Window.GL.BindTexture(TextureTarget.Texture2D, id);
 
-        Window.GL.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba, imgWidth, imgHeight, 0, pixelFormat, GLEnum.UnsignedByte, data);
+        Window.GL.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba, imgWidth, imgHeight, 0, PixelFormat.Rgba, GLEnum.UnsignedByte, data);
 
         Window.GL.TextureParameter(id, GLEnum.TextureWrapS, (int)TextureWrapMode.MirroredRepeat);
         Window.GL.TextureParameter(id, GLEnum.TextureWrapT, (int)TextureWrapMode.MirroredRepeat);

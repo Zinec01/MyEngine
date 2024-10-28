@@ -14,15 +14,20 @@ public class ShaderManager
     private static readonly Dictionary<string, ShaderProgramComponent> _shaderPrograms = [];
     private static readonly Dictionary<string, int> _uniformLocations = [];
 
-    public ShaderProgramComponent Default { get; }
+    public ShaderProgramComponent DefaultTexture { get; }
+    public ShaderProgramComponent DefaultColor { get; }
 
     public ShaderManager(EntityStore entityStore)
     {
         _entityStore = entityStore;
 
-        Default = GetShaderProgram("Default",
-                                   @"..\..\..\..\MyEngine\Shaders\basic_light.vert",
-                                   @"..\..\..\..\MyEngine\Shaders\basic_light.frag");
+        DefaultTexture = GetShaderProgram("Default Texture Shader",
+                                          @"..\..\..\..\ECSEngineTest\Assets\Shaders\basic_tex.vert",
+                                          @"..\..\..\..\ECSEngineTest\Assets\Shaders\basic_tex.frag");
+
+        DefaultColor = GetShaderProgram("Default Color Shader",
+                                        @"..\..\..\..\ECSEngineTest\Assets\Shaders\basic_color.vert",
+                                        @"..\..\..\..\ECSEngineTest\Assets\Shaders\basic_color.frag");
     }
 
     public ShaderProgramComponent GetShaderProgram(string name, string vertexPath, string fragmentPath, params ShaderFile[] otherShaders)
@@ -199,11 +204,35 @@ public class ShaderManager
         return false;
     }
 
+    public static bool SetUniform(uint programId, string varName, Vector2 value)
+    {
+        if (TryGetUniformLocation(programId, varName, out var location))
+        {
+            Window.GL.Uniform2(location, value);
+
+            return true;
+        }
+
+        return false;
+    }
+
     public static bool SetUniform(uint programId, string varName, Vector3 value)
     {
         if (TryGetUniformLocation(programId, varName, out var location))
         {
             Window.GL.Uniform3(location, value);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public static bool SetUniform(uint programId, string varName, Vector4 value)
+    {
+        if (TryGetUniformLocation(programId, varName, out var location))
+        {
+            Window.GL.Uniform4(location, value);
 
             return true;
         }

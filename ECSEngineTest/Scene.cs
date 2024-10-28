@@ -1,6 +1,8 @@
 ﻿using Friflo.Engine.ECS;
 using Friflo.Engine.ECS.Systems;
+using Silk.NET.OpenGL;
 using System.Diagnostics;
+using System.Drawing;
 
 namespace ECSEngineTest;
 
@@ -29,7 +31,7 @@ public class Scene : IDisposable
 
         EntityFactory = new(_store);
         ShaderManager = new(_store);
-        Loader = new(_store, ShaderManager);
+        Loader = new(_store, ShaderManager, EntityFactory);
 
         _rootSystem = new SystemRoot(_store)
         {
@@ -39,11 +41,14 @@ public class Scene : IDisposable
 
     internal void OnUpdate(object? sender, double deltaTime)
     {
-        _rootSystem.Update(new UpdateTick((float)deltaTime, 0/*(float)(DateTime.Now - Application.AppStart).TotalSeconds*/));
+        _rootSystem.Update(new UpdateTick((float)deltaTime, (float)(DateTime.Now - Application.AppStart).TotalSeconds));
     }
 
     internal void OnRender(object? sender, double deltaTime)
     {
+        Window.GL.ClearColor(Color.FromArgb(222, 235, 255));
+        Window.GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
         Renderer.RenderScene(_store, deltaTime);
     }
 
@@ -60,10 +65,14 @@ public class TestSystem : QuerySystem<EntityName>
     {
         Query.ForEach((Chunk<EntityName> components, ChunkEntities entities) =>
         {
-            for (int i = 0; i < entities.Length; i++)
+            foreach (var entity in entities)
             {
-                Debug.WriteLine(components[i].value);
+                foreach (var script in entity.Scripts)
+                {
+                    script.Update();
+                }
             }
         }).RunParallel();
+        //Console.WriteLine($"Frame DeltaTime: {Tick.deltaTime * 1000:.000} ms");
     }
 }

@@ -55,6 +55,14 @@ public class Window
             };
         }
 
+        _window.FileDrop += (files) =>
+        {
+            foreach (var file in files)
+            {
+                Console.WriteLine(file);
+            }
+        };
+
         OnLoad?.Invoke();
     }
 

@@ -15,13 +15,15 @@ public class SceneLoader : IDisposable
     private readonly Assimp _assimp = Assimp.GetApi();
     private readonly EntityStore _entityStore;
     private readonly ShaderManager _shaderManager;
+    private readonly EntityFactory _entityFactory;
 
     private string _currentDirectory = string.Empty;
 
-    public SceneLoader(EntityStore entityStore, ShaderManager shaderManager)
+    public SceneLoader(EntityStore entityStore, ShaderManager shaderManager, EntityFactory entityFactory)
     {
         _entityStore = entityStore;
         _shaderManager = shaderManager;
+        _entityFactory = entityFactory;
     }
 
     public unsafe void LoadScene(string filePath, SceneLoadFlags flags = SceneLoadFlags.Everything)
@@ -39,7 +41,7 @@ public class SceneLoader : IDisposable
         uint processed = 0;
 
         if (flags.HasFlag(SceneLoadFlags.Meshes))
-            processed += ProcessMeshes(null, scene->MRootNode, scene, flags.HasFlag(SceneLoadFlags.WorldTransforms));
+            processed += ProcessMeshes(null, scene->MRootNode, scene);
 
         if (flags.HasFlag(SceneLoadFlags.Lights))
             processed += ProcessLights(scene);
@@ -70,33 +72,34 @@ public class SceneLoader : IDisposable
         return scene;
     }
 
-    private unsafe uint ProcessMeshes(Entity? parentEntity, Node* node, Silk.NET.Assimp.Scene* scene, bool loadTransforms = false)
+    private unsafe uint ProcessMeshes(Entity? parentEntity, Node* node, Silk.NET.Assimp.Scene* scene)
     {
-        Entity? entity = null;
+        var entity = _entityStore.CreateEntity(new EntityName(node->MName));
+        parentEntity?.AddChild(entity);
+
         uint processed = 0;
         if (node->MNumMeshes > 0)
         {
-            entity = _entityStore.CreateEntity(new EntityName(node->MName.ToString()));
-            entity.Value.AddTag<MeshObjectTag>();
-
-            entity.Value.AddComponent(loadTransforms ? new TransformComponent(node->MTransformation) : new TransformComponent());
-            entity.Value.AddComponent(_shaderManager.Default);
-
-            if (node->MParent is not null && node->MParent->MNumMeshes > 0)
-                parentEntity?.AddChild(entity.Value);
+            entity.AddTag<MeshObjectTag>();
 
             for (int i = 0; i < node->MNumMeshes; i++)
             {
                 var meshIdx = node->MMeshes[i];
-                ProcessMesh(entity.Value, scene->MMeshes[meshIdx], scene);
+                ProcessMesh(entity, scene->MMeshes[meshIdx], scene);
             }
 
             processed += node->MNumMeshes + 1;
         }
+        else
+        {
+            entity.AddTag<NodeTag>();
+        }
+        
+        entity.AddComponent(new TransformComponent(node->MTransformation));
         
         for (int i = 0; i < node->MNumChildren; i++)
         {
-            processed += ProcessMeshes(entity, node->MChildren[i], scene, loadTransforms);
+            processed += ProcessMeshes(entity, node->MChildren[i], scene);
         }
 
         return processed;
@@ -129,11 +132,13 @@ public class SceneLoader : IDisposable
         {
             ProcessMeshVertices(entity, mesh, true);
             ProcessMeshTextures(entity, material, scene, texCount);
+            entity.AddComponent(_shaderManager.DefaultTexture);
         }
         else
         {
             ProcessMeshVertices(entity, mesh, false);
             ProcessMeshColor(entity, material);
+            entity.AddComponent(_shaderManager.DefaultColor);
         }
     }
 
@@ -164,7 +169,7 @@ public class SceneLoader : IDisposable
             if (_assimp.GetMaterialTexture(material, TextureType.Diffuse, i, &path, null, null, null, null, null, null) == Return.Success
                 && !string.IsNullOrEmpty(path))
             {
-                var textureName = path.ToString();
+                var textureName = Path.GetFileName(path);
 
                 string texturePath;
                 TextureComponent textureComponent;
@@ -172,7 +177,7 @@ public class SceneLoader : IDisposable
                 {
                     var texture = scene->MTextures[texIdx];
                     var extension = Marshal.PtrToStringAnsi((nint)texture->AchFormatHint);
-                    texturePath = Path.Combine(_currentDirectory, texture->MFilename) + "." + extension;
+                    texturePath = Path.Combine(_currentDirectory, texture->MFilename) + "." + extension; //TODO: Handle cases where filename is empty
 
                     if (TextureManager.IsLoaded(texturePath))
                     {
@@ -180,10 +185,7 @@ public class SceneLoader : IDisposable
                     }
                     else
                     {
-                        //var textureData = new Span<byte>((byte*)texture->PcData, (int)texture->MWidth * sizeof(Texel));
-                        //textureComponent = TextureManager.LoadTexture(texturePath, textureData.ToArray());
-
-                        textureComponent = TextureManager.LoadTexture(texturePath, (byte*)texture->PcData, texture->MWidth * (uint)sizeof(Texel), texture->MHeight, Silk.NET.OpenGL.PixelFormat.Bgra);
+                        textureComponent = TextureManager.LoadTexture(texturePath, (byte*)texture->PcData, (int)(texture->MWidth * Math.Max(texture->MHeight, 1) * sizeof(Texel)));
                     }
                 }
                 else
@@ -234,22 +236,14 @@ public class SceneLoader : IDisposable
         for (int i = 0; i < scene->MNumCameras; i++)
         {
             var camera = scene->MCameras[i];
-            var cameraNode = GetNodeByName(scene->MRootNode, camera->MName.ToString());
+            var cameraNode = GetNodeByName(scene->MRootNode, camera->MName);
             
-            var entity = _entityStore.CreateEntity(new EntityName(camera->MName));
-            entity.AddTag<CameraTag>();
-            entity.AddComponent(new CameraComponent
-            {
-                AspectRatio = camera->MAspect,
-                NearPlane = camera->MClipPlaneNear,
-                FarPlane = camera->MClipPlaneFar,
-                FieldOfView = camera->MHorizontalFOV,
-                Up = camera->MUp,
-                Front = camera->MLookAt,
-                Active = !_entityStore.Entities.Any(x => x.HasComponent<CameraComponent>()
-                                                         && x.GetComponent<CameraComponent>().Active)
-            });
-            entity.AddComponent(new TransformComponent(cameraNode->MTransformation));
+            _entityFactory.CreateCamera(camera->MName)
+                          .SetTransformation(cameraNode->MTransformation)
+                          .SetAspectRatio(camera->MAspect)
+                          .SetNearFarClipPlane(camera->MClipPlaneNear, camera->MClipPlaneFar)
+                          .SetFieldOfView(camera->MHorizontalFOV)
+                          .Build();
         }
 
         return scene->MNumCameras;
@@ -298,5 +292,18 @@ public class SceneLoader : IDisposable
     public void Dispose()
     {
         _assimp.Dispose();
+    }
+}
+
+public class MyScript : Script
+{
+    public override void Start()
+    {
+        base.Start();
+    }
+
+    public override void Update()
+    {
+        base.Update();
     }
 }

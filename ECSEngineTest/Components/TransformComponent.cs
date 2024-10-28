@@ -19,6 +19,18 @@ public struct TransformComponent : IComponent
 
         Position = new Interpolatable<Vector3>(translation);
         Rotation = new Interpolatable<Quaternion>(rotation);
-        Scale = new Interpolatable<Vector3>(scale);
+        Scale    = new Interpolatable<Vector3>(scale);
+    }
+
+    public TransformComponent(Vector3 position, Quaternion rotation, Vector3 scale)
+    {
+        Position = new Interpolatable<Vector3>(position);
+        Rotation = new Interpolatable<Quaternion>(rotation);
+        Scale    = new Interpolatable<Vector3>(scale);
+
+        WorldTransform = Matrix4x4.Identity
+                         * Matrix4x4.CreateScale(scale)
+                         * Matrix4x4.CreateFromQuaternion(rotation)
+                         * Matrix4x4.CreateTranslation(position);
     }
 }

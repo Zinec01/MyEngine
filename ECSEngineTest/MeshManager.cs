@@ -6,15 +6,16 @@ namespace ECSEngineTest;
 
 public static class MeshManager
 {
+    private static uint _currentVAO = 0;
     private static readonly Dictionary<int, MeshComponent> _meshes = [];
 
     public static unsafe MeshComponent CreateMeshComponent(Span<Vector3> vertices, Span<Vector3> normals, Span<Vector2> uvs, uint[] indices)
     {
         bool isTexture;
-        if (vertices.Length == 0 || vertices.Length != normals.Length || ((isTexture = uvs != null && !uvs.IsEmpty) && vertices.Length != uvs.Length))
+        if (vertices.IsEmpty || vertices.Length != normals.Length || ((isTexture = uvs != null && !uvs.IsEmpty) && vertices.Length != uvs.Length))
             throw new InvalidDataException();
 
-        var hash = vertices.ToArray().GetHashCode();
+        var hash = ComputeVertexHash(vertices, normals, uvs);
         if (_meshes.TryGetValue(hash, out var component)) return component;
 
         VertexData[]? vertexData = null;
@@ -26,7 +27,8 @@ public static class MeshManager
                                       GenEBO(indices),
                                       vertexData,  // TODO: Remove if it remains unused
                                       vertTexData, // TODO: Remove if it remains unused
-                                      indices);    // TODO: Remove if it remains unused
+                                      indices,     // TODO: Remove if it remains unused
+                                      hash);
 
         SetupVertexAttribs(isTexture);
 
@@ -35,12 +37,35 @@ public static class MeshManager
         return component;
     }
 
+    private static int ComputeVertexHash(Span<Vector3> vertices, Span<Vector3> normals, Span<Vector2> uvs)
+    {
+        var hash = 0;
+
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            hash = HashCode.Combine(hash, Math.Round(vertices[i].X, 2));
+            hash = HashCode.Combine(hash, Math.Round(vertices[i].Y, 2));
+            hash = HashCode.Combine(hash, Math.Round(vertices[i].Z, 2));
+
+            hash = HashCode.Combine(hash, Math.Round(normals[i].X, 2));
+            hash = HashCode.Combine(hash, Math.Round(normals[i].Y, 2));
+            hash = HashCode.Combine(hash, Math.Round(normals[i].Z, 2));
+
+            if (uvs.IsEmpty) continue;
+
+            hash = HashCode.Combine(hash, Math.Round(uvs[i].X, 2));
+            hash = HashCode.Combine(hash, Math.Round(uvs[i].Y, 2));
+        }
+
+        return hash;
+    }
+
     private static uint GenVAO()
     {
         var vao = Window.GL.GenVertexArray();
         Window.GL.BindVertexArray(vao);
 
-        return vao;
+        return _currentVAO = vao;
     }
 
     private static unsafe uint GenVBO(Span<Vector3> vertices, Span<Vector3> normals, out VertexData[] data)
@@ -84,7 +109,7 @@ public static class MeshManager
         return vbo;
     }
 
-    private static unsafe uint GenEBO(Span<uint> indices)
+    private static unsafe uint GenEBO(uint[] indices)
     {
         var ebo = Window.GL.GenBuffer();
         Window.GL.BindBuffer(BufferTargetARB.ElementArrayBuffer, ebo);
@@ -113,7 +138,10 @@ public static class MeshManager
 
     public static void BindVAO(uint vao)
     {
+        if (_currentVAO == vao) return;
+
         Window.GL.BindVertexArray(vao);
+        _currentVAO = vao;
     }
 
     public static void DisposeMesh(MeshComponent meshComponent)
@@ -122,8 +150,7 @@ public static class MeshManager
         Window.GL.DeleteBuffer(meshComponent.EBO);
         Window.GL.DeleteVertexArray(meshComponent.VAO);
 
-        _meshes.Remove(_meshes.FirstOrDefault(x => x.Value.VertexData == meshComponent.VertexData
-                                                && x.Value.VertexTextureData == meshComponent.VertexTextureData).Key);
+        _meshes.Remove(_meshes.FirstOrDefault(x => x.Value.Hash == meshComponent.Hash).Key);
     }
 
     public static void DisposeAllMeshes()
