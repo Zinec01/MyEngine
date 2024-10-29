@@ -82,23 +82,25 @@ public class CameraBuilder(EntityStore store, string name)
 
         var active = _active || cameraEntities.Count == 0;
 
-        var cameraComponent = CameraManager.CreateCameraComponent();
-
-        cameraComponent.Active = active;
-        cameraComponent.FieldOfView = _fov;
-        cameraComponent.NearPlane = _nearPlane;
-        cameraComponent.FarPlane = _farPlane;
-        cameraComponent.AspectRatio = _aspectRatio;
-
         var forward = Vector3.Transform(-Vector3.UnitZ, _rotation);
         var target = _position + forward;
         var up = Vector3.Transform(Vector3.UnitY, _rotation);
 
-        cameraComponent.ViewMat = Matrix4x4.CreateLookAt(_position, target, up);
-        cameraComponent.ProjectMat = Matrix4x4.CreatePerspectiveFieldOfView(float.DegreesToRadians(cameraComponent.FieldOfView),
-                                                                            cameraComponent.AspectRatio,
-                                                                            cameraComponent.NearPlane,
-                                                                            cameraComponent.FarPlane);
+        var cameraComponent = new CameraComponent
+        {
+            Active = active,
+            FieldOfView = _fov,
+            NearPlane = _nearPlane,
+            FarPlane = _farPlane,
+            AspectRatio = _aspectRatio,
+            ViewMat = Matrix4x4.CreateLookAt(_position, target, up),
+            ProjectMat = Matrix4x4.CreatePerspectiveFieldOfView(float.DegreesToRadians(_fov),
+                                                                _aspectRatio,
+                                                                _nearPlane,
+                                                                _farPlane)
+        };
+
+        CameraManager.SetUBOData(ref cameraComponent);
 
         var transformComponent = _transform.IsIdentity
                                     ? new TransformComponent(_position, _rotation, Vector3.One)

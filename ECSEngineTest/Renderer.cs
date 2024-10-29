@@ -12,12 +12,9 @@ public class Renderer
         store.Query<CameraComponent>()
              .ForEachEntity((ref CameraComponent camera, Entity entity) =>
         {
-            if (camera.Active)
-            {
-                CameraManager.BindAndSetUBO(ref camera);
+            if (!camera.Active) return;
 
-                return;
-            }
+            CameraManager.SetUBOViewMat(ref camera);
         });
 
         store.Query<TransformComponent>()

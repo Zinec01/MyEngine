@@ -63,6 +63,7 @@ public class ShaderManager
         }
 
         LinkShaderProgram(id);
+        LinkUniformBlocks(id);
 
         return new ShaderProgramComponent(id, name, vertexId, fragmentId, otherShaderIds);
     }
@@ -167,6 +168,16 @@ public class ShaderManager
         {
             var info = Window.GL.GetProgramInfoLog(programId);
             throw new Exception($"Could not link shader program: {info}");
+        }
+    }
+
+    private static void LinkUniformBlocks(uint programId)
+    {
+        foreach (var block in ShaderUniforms.UniformBlocks)
+        {
+            var index = Window.GL.GetUniformBlockIndex(programId, block.Name);
+            if (index != uint.MaxValue)
+                Window.GL.UniformBlockBinding(programId, index, block.Binding);
         }
     }
 

@@ -28,6 +28,8 @@ public class Application : IDisposable
         Window.GL.CullFace(TriangleFace.Back);
         Window.GL.FrontFace(FrontFaceDirection.Ccw);
 
+        ShaderUniforms.InitUniformBlocks();
+
         Init?.Invoke(this);
     }
 

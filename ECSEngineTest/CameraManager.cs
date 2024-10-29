@@ -4,37 +4,35 @@ using System.Numerics;
 
 namespace ECSEngineTest;
 
-public class CameraManager
+internal class CameraManager
 {
-    internal static CameraComponent CreateCameraComponent()
+    public static unsafe void SetUBOData(ref CameraComponent camera)
     {
-        return new CameraComponent(GenUBO());
+        Window.GL.BindBuffer(BufferTargetARB.UniformBuffer, ShaderUniforms.CameraMatricesUniformBlock.UBO);
+
+        var size = sizeof(Matrix4x4);
+        Window.GL.BufferSubData(BufferTargetARB.UniformBuffer, 0, (nuint)size, ref camera.ViewMat);
+        Window.GL.BufferSubData(BufferTargetARB.UniformBuffer, size, (nuint)size, ref camera.ProjectMat);
+
+        Window.GL.BindBuffer(BufferTargetARB.UniformBuffer, 0);
     }
 
-    private static unsafe uint GenUBO()
+    public static unsafe void SetUBOViewMat(ref CameraComponent camera)
     {
-        var ubo = Window.GL.GenBuffer();
+        Window.GL.BindBuffer(BufferTargetARB.UniformBuffer, ShaderUniforms.CameraMatricesUniformBlock.UBO);
 
-        Window.GL.BindBuffer(BufferTargetARB.UniformBuffer, ubo);
+        var size = sizeof(Matrix4x4);
+        Window.GL.BufferSubData(BufferTargetARB.UniformBuffer, 0, (nuint)size, ref camera.ViewMat);
 
-        var size = (nuint)sizeof(Matrix4x4) * 2;
-        Window.GL.BufferData(BufferTargetARB.UniformBuffer, size, null, BufferUsageARB.StaticDraw);
-        Window.GL.BindBufferRange(BufferTargetARB.UniformBuffer, 0, ubo, 0, size);
-
-        return ubo;
+        Window.GL.BindBuffer(BufferTargetARB.UniformBuffer, 0);
     }
 
-    public static unsafe void BindAndSetUBO(ref CameraComponent camera)
+    public static unsafe void SetUBOProjectMat(ref CameraComponent camera)
     {
-        Window.GL.BindBuffer(BufferTargetARB.UniformBuffer, camera.UBO);
+        Window.GL.BindBuffer(BufferTargetARB.UniformBuffer, ShaderUniforms.CameraMatricesUniformBlock.UBO);
 
-        var data = new[] { camera.ProjectMat, camera.ViewMat };
-        var size = (nuint)sizeof(Matrix4x4) * 2;
-
-        fixed (void* dataPtr = &data[0])
-        {
-            Window.GL.BufferSubData(BufferTargetARB.UniformBuffer, 0, size, dataPtr);
-        }
+        var size = sizeof(Matrix4x4);
+        Window.GL.BufferSubData(BufferTargetARB.UniformBuffer, size, (nuint)size, ref camera.ProjectMat);
 
         Window.GL.BindBuffer(BufferTargetARB.UniformBuffer, 0);
     }
