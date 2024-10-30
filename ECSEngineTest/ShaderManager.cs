@@ -143,10 +143,10 @@ public class ShaderManager
 
     private static void CheckShadersValidity(ref string vertexPath, ref string fragmentPath, ref ShaderFile[] otherShaders)
     {
-        if (!StringHelper.ValidateFilePath(ref vertexPath))
+        if (!FileHelper.ValidateFilePath(ref vertexPath))
             throw new FileNotFoundException(null, vertexPath);
 
-        if (!StringHelper.ValidateFilePath(ref fragmentPath))
+        if (!FileHelper.ValidateFilePath(ref fragmentPath))
             throw new FileNotFoundException(null, fragmentPath);
 
         if (otherShaders.Any(x => x.Type == ShaderType.Vertex || x.Type == ShaderType.Fragment))
@@ -154,7 +154,7 @@ public class ShaderManager
 
         for (int i = 0; i < otherShaders.Length; i++)
         {
-            if (!StringHelper.ValidateFilePath(ref otherShaders[i].FilePath))
+            if (!FileHelper.ValidateFilePath(ref otherShaders[i].FilePath))
                 throw new FileNotFoundException(null, otherShaders[i].FilePath);
         }
     }
@@ -191,7 +191,7 @@ public class ShaderManager
         Window.GL.DeleteProgram(programId);
     }
 
-    public static bool SetUniform(uint programId, string varName, int value)
+    public static bool SetUniformVariable(uint programId, string varName, int value)
     {
         if (TryGetUniformLocation(programId, varName, out var location))
         {
@@ -203,7 +203,7 @@ public class ShaderManager
         return false;
     }
 
-    public static bool SetUniform(uint programId, string varName, float value)
+    public static bool SetUniformVariable(uint programId, string varName, float value)
     {
         if (TryGetUniformLocation(programId, varName, out var location))
         {
@@ -215,7 +215,7 @@ public class ShaderManager
         return false;
     }
 
-    public static bool SetUniform(uint programId, string varName, Vector2 value)
+    public static bool SetUniformVariable(uint programId, string varName, Vector2 value)
     {
         if (TryGetUniformLocation(programId, varName, out var location))
         {
@@ -227,7 +227,7 @@ public class ShaderManager
         return false;
     }
 
-    public static bool SetUniform(uint programId, string varName, Vector3 value)
+    public static bool SetUniformVariable(uint programId, string varName, Vector3 value)
     {
         if (TryGetUniformLocation(programId, varName, out var location))
         {
@@ -239,7 +239,7 @@ public class ShaderManager
         return false;
     }
 
-    public static bool SetUniform(uint programId, string varName, Vector4 value)
+    public static bool SetUniformVariable(uint programId, string varName, Vector4 value)
     {
         if (TryGetUniformLocation(programId, varName, out var location))
         {
@@ -251,7 +251,7 @@ public class ShaderManager
         return false;
     }
 
-    public static unsafe bool SetUniform(uint programId, string varName, Matrix4x4 value)
+    public static unsafe bool SetUniformVariable(uint programId, string varName, Matrix4x4 value)
     {
         if (TryGetUniformLocation(programId, varName, out var location))
         {

@@ -1,4 +1,5 @@
-﻿using Silk.NET.OpenGL;
+﻿using ECSEngineTest.Helpers;
+using Silk.NET.OpenGL;
 
 namespace ECSEngineTest;
 
@@ -10,7 +11,7 @@ public class Application : IDisposable
 
     private readonly List<Scene> _scenes = [];
     public IReadOnlyList<Scene> Scenes => _scenes;
-    public int? ActiveSceneId { get; set; }
+    public uint? ActiveSceneId { get; set; }
     public Scene? ActiveScene => ActiveSceneId.HasValue ? _scenes.FirstOrDefault(x => x.Id == ActiveSceneId) : null;
 
     public event Action<Application> Init;
@@ -19,6 +20,8 @@ public class Application : IDisposable
     {
         MainWindow = new(windowSettings);
         MainWindow.OnLoad += OnMainWindowLoad;
+        MainWindow.OnClosing += OnMainWindowClosing;
+        MainWindow.OnFileDrop += OnMainWindowFileDrop;
     }
 
     private void OnMainWindowLoad()
@@ -33,6 +36,24 @@ public class Application : IDisposable
         Init?.Invoke(this);
     }
 
+    private void OnMainWindowClosing()
+    {
+        ShaderManager.Dispose();
+        ShaderUniforms.Dispose();
+        MeshManager.DisposeAllMeshes();
+    }
+
+    private void OnMainWindowFileDrop(string[] filePaths)
+    {
+        for (int i = 0; i < filePaths.Length; i++)
+        {
+            var filePath = filePaths[i];
+
+            if (FileHelper.ValidateFilePath(ref filePath) && FileHelper.IsSupportedModelFile(filePath))
+                ActiveScene?.Loader.LoadScene(filePath);
+        }
+    }
+
     public Scene CreateScene(string name)
     {
         var scene = new Scene(name);
@@ -42,13 +63,15 @@ public class Application : IDisposable
         
         _scenes.Add(scene);
 
+        ActiveSceneId ??= scene.Id;
+
         return scene;
     }
 
     public void Run()
     {
         AppStart = DateTime.Now;
-        MainWindow?.Run();
+        MainWindow.Run();
     }
 
     public void Dispose()

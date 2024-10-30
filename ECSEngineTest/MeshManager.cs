@@ -124,15 +124,17 @@ public static class MeshManager
 
     private static unsafe void SetupVertexAttribs(bool isTexture)
     {
-        Window.GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, (uint)sizeof(float) * 8, null);
+        var stride = sizeof(float) * (uint)(isTexture ? 8 : 6);
+
+        Window.GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, stride, 0);
         Window.GL.EnableVertexAttribArray(0);
 
-        Window.GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, (uint)sizeof(float) * 8, (void*)(sizeof(float) * 3));
+        Window.GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, stride, sizeof(float) * 3);
         Window.GL.EnableVertexAttribArray(1);
 
         if (!isTexture) return;
 
-        Window.GL.VertexAttribPointer(2, 2, VertexAttribPointerType.Float, false, (uint)sizeof(float) * 8, (void*)(sizeof(float) * 6));
+        Window.GL.VertexAttribPointer(2, 2, VertexAttribPointerType.Float, false, stride, sizeof(float) * 6);
         Window.GL.EnableVertexAttribArray(2);
     }
 

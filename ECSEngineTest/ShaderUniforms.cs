@@ -36,5 +36,13 @@ namespace ECSEngineTest
         }
 
         private const string _cameraMatricesUniformBlockName = "CameraMatrices";
+
+        public static void Dispose()
+        {
+            foreach (var uniformBlock in _uniformBlocks)
+            {
+                Window.GL.DeleteBuffer(uniformBlock.UBO);
+            }
+        }
     }
 }

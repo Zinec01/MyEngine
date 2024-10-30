@@ -39,12 +39,12 @@ public class Scene : IDisposable
         };
     }
 
-    internal void OnUpdate(object? sender, double deltaTime)
+    internal void OnUpdate(double deltaTime)
     {
         _rootSystem.Update(new UpdateTick((float)deltaTime, (float)(DateTime.Now - Application.AppStart).TotalSeconds));
     }
 
-    internal void OnRender(object? sender, double deltaTime)
+    internal void OnRender(double deltaTime)
     {
         Window.GL.ClearColor(Color.FromArgb(222, 235, 255));
         Window.GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);

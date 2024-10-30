@@ -2,6 +2,7 @@
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
+using System.Numerics;
 
 namespace ECSEngineTest;
 
@@ -11,11 +12,15 @@ public class Window
     private IInputContext InputContext { get; set; }
     internal static GL GL { get; private set; }
 
-    public WindowState State => _window.WindowState;
+    public WindowState State => (WindowState)(int)_window.WindowState;
 
     public event Action OnLoad;
-    internal event EventHandler<double> OnUpdate;
-    internal event EventHandler<double> OnRender;
+    public event Action<Vector2> OnResize;
+    public event Action<string[]> OnFileDrop;
+    public event Action OnClosing;
+
+    internal event Action<double> OnUpdate;
+    internal event Action<double> OnRender;
 
     public Window(WindowSettings settings)
     {
@@ -30,7 +35,8 @@ public class Window
         _window.Update += OnWindowUpdate;
         _window.Render += OnWindowRender;
         _window.FramebufferResize += OnWindowFramebufferResize;
-        _window.Closing += OnWindowClose;
+        _window.Closing += OnWindowClosing;
+        _window.FileDrop += OnWindowFileDrop;
         //_window.Initialize();
     }
 
@@ -68,24 +74,26 @@ public class Window
 
     private void OnWindowUpdate(double dt)
     {
-        //TODO: Update Event
-        OnUpdate?.Invoke(this, dt);
+        OnUpdate?.Invoke(dt);
     }
 
     private void OnWindowRender(double dt)
     {
-        //TODO: Render Event
-        OnRender?.Invoke(this, dt);
+        OnRender?.Invoke(dt);
     }
 
     private void OnWindowFramebufferResize(Vector2D<int> newSize)
     {
-        //TODO: WindowResized Event
+        OnResize?.Invoke(new Vector2(newSize.X, newSize.Y));
     }
 
-    private void OnWindowClose()
+    private void OnWindowFileDrop(string[] fileNames)
     {
-        //TODO: WindowClosing Event
-        ShaderManager.Dispose();
+        OnFileDrop?.Invoke(fileNames);
+    }
+
+    private void OnWindowClosing()
+    {
+        OnClosing?.Invoke();
     }
 }

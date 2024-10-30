@@ -22,7 +22,7 @@ public class Program
     private static void InitApp(Application app)
     {
         var scene = app.CreateScene("Test");
-        scene.Loader.LoadScene(@"..\..\..\..\ECSEngineTest\Assets\Models\concrete_trash_bin_fixed_transforms.glb");
+        //scene.Loader.LoadScene(@"..\..\..\..\ECSEngineTest\Assets\Models\concrete_trash_bin_fixed_transforms.glb");
         //scene.Loader.LoadScene(@"..\..\..\..\ECSEngineTest\Assets\Models\concrete_trash_bin_fixed_transforms.gltf");
         //scene.Loader.LoadScene(@"..\..\..\..\ECSEngineTest\Assets\Models\concrete_trash_bin.gltf");
         //scene.Loader.LoadScene(@"..\..\..\..\ECSEngineTest\Assets\Models\concrete_trash_bin.glb");
@@ -34,7 +34,7 @@ public class Program
         //scene.Loader.LoadScene(@"..\..\..\..\ECSEngineTest\Assets\Models\pink_cube.glb");
 
         scene.EntityFactory.CreateCamera("Main Camera")
-                           .SetPosition(new System.Numerics.Vector3(0.0f, 5.0f, -20.0f))
+                           .SetPosition(new System.Numerics.Vector3(0.0f, 5.0f, -100.0f))
                            .SetActive()
                            .Build();
     }

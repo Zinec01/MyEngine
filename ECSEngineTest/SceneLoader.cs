@@ -10,8 +10,6 @@ namespace ECSEngineTest;
 
 public class SceneLoader : IDisposable
 {
-    private readonly string[] SUPPORTED_FORMATS = [".obj", ".glb", ".gltf", ".fbx"];
-
     private readonly Assimp _assimp = Assimp.GetApi();
     private readonly EntityStore _entityStore;
     private readonly ShaderManager _shaderManager;
@@ -28,10 +26,7 @@ public class SceneLoader : IDisposable
 
     public unsafe void LoadScene(string filePath, SceneLoadFlags flags = SceneLoadFlags.Everything)
     {
-        //if (!SUPPORTED_FORMATS.Contains(Path.GetExtension(filePath)))
-        //    throw new NotImplementedException("Format not yet supported");
-
-        if (!StringHelper.ValidateFilePath(ref filePath))
+        if (!FileHelper.ValidateFilePath(ref filePath))
             throw new FileNotFoundException(null, filePath);
 
         var scene = LoadSceneFromFile(filePath);
@@ -39,15 +34,15 @@ public class SceneLoader : IDisposable
         _currentDirectory = Path.GetDirectoryName(filePath)!;
 
         uint processed = 0;
-
+        Entity? rootEntity = null;
         if (flags.HasFlag(SceneLoadFlags.Meshes))
-            processed += ProcessMeshes(null, scene->MRootNode, scene);
+            processed += ProcessMeshes(null, scene->MRootNode, scene, out rootEntity);
 
         if (flags.HasFlag(SceneLoadFlags.Lights))
-            processed += ProcessLights(scene);
+            processed += ProcessLights(rootEntity, scene);
 
         if (flags.HasFlag(SceneLoadFlags.Cameras))
-            processed += ProcessCameras(scene);
+            processed += ProcessCameras(rootEntity, scene);
 
         if (processed > 0)
             FileChangeWatcher.SubscribeForFileChanges(filePath, (_, _) => SceneFileChanged(filePath));
@@ -72,34 +67,58 @@ public class SceneLoader : IDisposable
         return scene;
     }
 
-    private unsafe uint ProcessMeshes(Entity? parentEntity, Node* node, Silk.NET.Assimp.Scene* scene)
+    private unsafe uint ProcessMeshes(Entity? parentEntity, Node* node, Silk.NET.Assimp.Scene* scene, out Entity? rootEntity)
     {
-        var entity = _entityStore.CreateEntity(new EntityName(node->MName));
-        parentEntity?.AddChild(entity);
+        Entity? entity = null;
+        rootEntity = null;
 
         uint processed = 0;
+        if (node == scene->MRootNode)
+        {
+            entity = _entityStore.CreateEntity(new EntityName(node->MName));
+            entity.Value.AddTag<NodeTag>();
+            entity.Value.AddComponent(new TransformComponent(node->MTransformation));
+
+            rootEntity = entity.Value;
+
+            processed += 1;
+        }
         if (node->MNumMeshes > 0)
         {
-            entity.AddTag<MeshObjectTag>();
+            if (entity == null)
+            {
+                entity = _entityStore.CreateEntity(new EntityName(node->MName));
+                entity.Value.AddComponent(new TransformComponent(node->MTransformation));
+            }
+            entity.Value.AddTag<MeshObjectTag>();
+
+            parentEntity?.AddChild(entity.Value);
+
+            //var nodeTmp = node;
+            //var entityTmp = entity.Value;
+            //while (nodeTmp->MParent != null && nodeTmp != scene->MRootNode)
+            //{
+            //    var parentEntityTmp = _entityStore.CreateEntity(new EntityName(node->MParent->MName));
+            //    parentEntityTmp.AddTag<NodeTag>();
+            //    parentEntityTmp.AddComponent(new TransformComponent(node->MParent->MTransformation));
+            //    parentEntityTmp.AddChild(entityTmp);
+
+            //    entityTmp = parentEntityTmp;
+            //    nodeTmp = node->MParent;
+            //}
 
             for (int i = 0; i < node->MNumMeshes; i++)
             {
                 var meshIdx = node->MMeshes[i];
-                ProcessMesh(entity, scene->MMeshes[meshIdx], scene);
+                ProcessMesh(entity.Value, scene->MMeshes[meshIdx], scene);
             }
 
             processed += node->MNumMeshes + 1;
         }
-        else
-        {
-            entity.AddTag<NodeTag>();
-        }
-        
-        entity.AddComponent(new TransformComponent(node->MTransformation));
         
         for (int i = 0; i < node->MNumChildren; i++)
         {
-            processed += ProcessMeshes(entity, node->MChildren[i], scene);
+            processed += ProcessMeshes(entity, node->MChildren[i], scene, out _);
         }
 
         return processed;
@@ -208,7 +227,7 @@ public class SceneLoader : IDisposable
         }
     }
 
-    private unsafe uint ProcessLights(Silk.NET.Assimp.Scene* scene)
+    private unsafe uint ProcessLights(Entity? rootEntity, Silk.NET.Assimp.Scene* scene)
     {
         for (int i = 0; i < scene->MNumLights; i++)
         {
@@ -226,24 +245,28 @@ public class SceneLoader : IDisposable
             });
             entity.AddComponent(new ColorComponent(new Vector4(light->MColorDiffuse, 1f)));
             entity.AddComponent(new TransformComponent(lightNode->MTransformation));
+
+            rootEntity?.AddChild(entity);
         }
 
         return scene->MNumLights;
     }
 
-    private unsafe uint ProcessCameras(Silk.NET.Assimp.Scene* scene)
+    private unsafe uint ProcessCameras(Entity? rootEntity, Silk.NET.Assimp.Scene* scene)
     {
         for (int i = 0; i < scene->MNumCameras; i++)
         {
             var camera = scene->MCameras[i];
             var cameraNode = GetNodeByName(scene->MRootNode, camera->MName);
             
-            _entityFactory.CreateCamera(camera->MName)
-                          .SetTransformation(cameraNode->MTransformation)
-                          .SetAspectRatio(camera->MAspect)
-                          .SetNearFarClipPlane(camera->MClipPlaneNear, camera->MClipPlaneFar)
-                          .SetFieldOfView(camera->MHorizontalFOV)
-                          .Build();
+            var entity = _entityFactory.CreateCamera(camera->MName)
+                                       .SetTransformation(cameraNode->MTransformation)
+                                       .SetAspectRatio(camera->MAspect)
+                                       .SetNearFarClipPlane(camera->MClipPlaneNear, camera->MClipPlaneFar)
+                                       .SetFieldOfView(camera->MHorizontalFOV)
+                                       .Build();
+
+            rootEntity?.AddChild(entity);
         }
 
         return scene->MNumCameras;
