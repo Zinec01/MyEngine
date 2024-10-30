@@ -34,7 +34,7 @@ public class Program
         //scene.Loader.LoadScene(@"..\..\..\..\ECSEngineTest\Assets\Models\pink_cube.glb");
 
         scene.EntityFactory.CreateCamera("Main Camera")
-                           .SetPosition(new System.Numerics.Vector3(0.0f, 5.0f, -100.0f))
+                           .SetPosition(new System.Numerics.Vector3(0.0f, 5.0f, 20.0f))
                            .SetActive()
                            .Build();
     }

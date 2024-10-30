@@ -73,16 +73,6 @@ public class SceneLoader : IDisposable
         rootEntity = null;
 
         uint processed = 0;
-        if (node == scene->MRootNode)
-        {
-            entity = _entityStore.CreateEntity(new EntityName(node->MName));
-            entity.Value.AddTag<NodeTag>();
-            entity.Value.AddComponent(new TransformComponent(node->MTransformation));
-
-            rootEntity = entity.Value;
-
-            processed += 1;
-        }
         if (node->MNumMeshes > 0)
         {
             if (entity == null)
@@ -94,19 +84,6 @@ public class SceneLoader : IDisposable
 
             parentEntity?.AddChild(entity.Value);
 
-            //var nodeTmp = node;
-            //var entityTmp = entity.Value;
-            //while (nodeTmp->MParent != null && nodeTmp != scene->MRootNode)
-            //{
-            //    var parentEntityTmp = _entityStore.CreateEntity(new EntityName(node->MParent->MName));
-            //    parentEntityTmp.AddTag<NodeTag>();
-            //    parentEntityTmp.AddComponent(new TransformComponent(node->MParent->MTransformation));
-            //    parentEntityTmp.AddChild(entityTmp);
-
-            //    entityTmp = parentEntityTmp;
-            //    nodeTmp = node->MParent;
-            //}
-
             for (int i = 0; i < node->MNumMeshes; i++)
             {
                 var meshIdx = node->MMeshes[i];
@@ -115,6 +92,19 @@ public class SceneLoader : IDisposable
 
             processed += node->MNumMeshes + 1;
         }
+        else if (DoesNodeContainMeshes(node))
+        {
+            entity = _entityStore.CreateEntity(new EntityName(node->MName));
+            entity.Value.AddTag<NodeTag>();
+            entity.Value.AddComponent(new TransformComponent(node->MTransformation));
+
+            parentEntity?.AddChild(entity.Value);
+
+            processed += 1;
+        }
+
+        if (node == scene->MRootNode)
+            rootEntity = entity;
         
         for (int i = 0; i < node->MNumChildren; i++)
         {
@@ -306,6 +296,20 @@ public class SceneLoader : IDisposable
         }
 
         return transform;
+    }
+
+    private unsafe bool DoesNodeContainMeshes(Node* node)
+    {
+        if (node->MNumMeshes > 0)
+            return true;
+
+        for (int i = 0; i < node->MNumChildren; i++)
+        {
+            if (DoesNodeContainMeshes(node->MChildren[i]))
+                return true;
+        }
+
+        return false;
     }
 
     private unsafe void SceneFileChanged(string filePath)

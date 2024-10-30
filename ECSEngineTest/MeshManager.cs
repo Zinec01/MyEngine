@@ -25,9 +25,9 @@ public static class MeshManager
                                       isTexture ? GenVBO(vertices, normals, uvs, out vertTexData)
                                                 : GenVBO(vertices, normals, out vertexData),
                                       GenEBO(indices),
-                                      vertexData,  // TODO: Remove if it remains unused
-                                      vertTexData, // TODO: Remove if it remains unused
-                                      indices,     // TODO: Remove if it remains unused
+                                      vertexData,
+                                      vertTexData,
+                                      indices,
                                       hash);
 
         SetupVertexAttribs(isTexture);

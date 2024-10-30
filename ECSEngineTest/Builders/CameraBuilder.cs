@@ -67,7 +67,6 @@ public class CameraBuilder(EntityStore store, string name)
         return this;
     }
 
-    //TODO: Convert to void if Entity is unused
     public Entity Build()
     {
         var cameraEntities = store.Query<CameraComponent>();
@@ -82,7 +81,7 @@ public class CameraBuilder(EntityStore store, string name)
 
         var active = _active || cameraEntities.Count == 0;
 
-        var forward = Vector3.Transform(Vector3.UnitZ, _rotation);
+        var forward = Vector3.Transform(-Vector3.UnitZ, _rotation);
         var target = _position + forward;
         var up = Vector3.Transform(Vector3.UnitY, _rotation);
 

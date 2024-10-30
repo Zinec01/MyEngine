@@ -2,6 +2,7 @@
 using ECSEngineTest.Tags;
 using Friflo.Engine.ECS;
 using Silk.NET.OpenGL;
+using System.Numerics;
 
 namespace ECSEngineTest;
 
@@ -15,33 +16,49 @@ public class Renderer
             if (!camera.Active) return;
 
             //CameraManager.SetUBOViewMat(ref camera);
-
-            //Console.WriteLine();
-            //Console.WriteLine("Camera");
-            //Console.WriteLine("FOV: " + camera.FieldOfView);
-            //Console.WriteLine("Aspect Ratio: " + camera.AspectRatio);
-            //Console.WriteLine("Near Plane: " + camera.NearPlane);
-            //Console.WriteLine("Far Plane: " + camera.FarPlane);
-            //Console.WriteLine("Position: " + transform.Position.Current);
-            //Console.WriteLine("Rotation: " + transform.Rotation.Current);
-            //Console.WriteLine("Scale: " + transform.Scale.Current);
-            //Console.WriteLine("Projection Matrix: " + camera.ProjectMat);
-            //Console.WriteLine("View Matrix: " + camera.ViewMat);
         });
 
+        var i = 0;
+        Entity? parent = null;
         store.Query<TransformComponent>()
              .AllTags(Friflo.Engine.ECS.Tags.Get<MeshObjectTag>())
              .ForEachEntity((ref TransformComponent transform, Entity entity) =>
         {
-            //Console.WriteLine();
-            //Console.WriteLine($"Model - {entity.Name}");
-            //Console.WriteLine("Position: " + transform.Position.Current);
-            //Console.WriteLine("Rotation: " + transform.Rotation.Current);
-            //Console.WriteLine("Scale: " + transform.Scale.Current);
-            //Console.WriteLine("Transform: " + transform.WorldTransform);
+            if (parent == null)
+            {
+                if (!entity.Parent.IsNull)
+                {
+                    parent = entity.Parent;
+                }
+                else
+                {
+                    parent = entity;
+                }
+            }
+            else
+            {
+                if (!entity.Parent.IsNull && parent != entity.Parent)
+                {
+                    parent = entity.Parent;
+                    i++;
+                }
+                else if(entity.Parent.IsNull && parent != entity)
+                {
+                    parent = entity;
+                    i++;
+                }
+            }
+
+            var modulo = i % 4;
+            var increment = ((i / 4) + 1) * 2;
+            var x = modulo > 0 && modulo < 3 ? increment : -increment;
+            var y = modulo < 2 ? increment : -increment;
 
             foreach (var child in entity.ChildEntities)
             {
+                if (!child.HasComponent<MeshComponent>() || !child.HasComponent<ShaderProgramComponent>())
+                    continue;
+
                 var shaderProgram = child.GetComponent<ShaderProgramComponent>();
 
                 ShaderManager.UseShaderProgram(shaderProgram.Id);
@@ -60,6 +77,8 @@ public class Renderer
                     tmpEntity = tmpEntity.Parent;
                 }
 
+                tmpTransform *= Matrix4x4.CreateTranslation(new Vector3(x, y, 0));
+
                 ShaderManager.SetUniformVariable(shaderProgram.Id, ShaderUniforms.ModelMatrix, tmpTransform);
 
                 if (child.HasComponent<TextureComponent>())
@@ -76,36 +95,6 @@ public class Renderer
                 }
 
                 Window.GL.DrawElements(PrimitiveType.Triangles, (uint)mesh.Indices.Length, DrawElementsType.UnsignedInt, null);
-
-                //Console.WriteLine();
-                //Console.WriteLine($"Mesh - {child.Name}");
-                //Console.WriteLine("VAO: " + mesh.VAO);
-                //Console.WriteLine("VBO: " + mesh.VBO);
-                //Console.WriteLine("EBO: " + mesh.EBO);
-                //Console.WriteLine("Position: " + transform.Position.Current);
-                //Console.WriteLine("Rotation: " + transform.Rotation.Current);
-                //Console.WriteLine("Scale: " + transform.Scale.Current);
-                //Console.WriteLine("Transform: " + tmpTransform);
-
-                //Console.WriteLine();
-                //Console.WriteLine("Vertices:");
-                //foreach (var vertex in mesh.VertexTextureData?.Select(x => x.Vertex) ?? mesh.VertexData!.Select(x => x.Vertex))
-                //{
-                //    Console.WriteLine($"{vertex.X}, {vertex.Y}, {vertex.Z}");
-                //}
-                //Console.WriteLine();
-                //Console.WriteLine("Normals:");
-                //foreach (var normal in mesh.VertexTextureData?.Select(x => x.Normal) ?? mesh.VertexData!.Select(x => x.Normal))
-                //{
-                //    Console.WriteLine($"{normal.X}, {normal.Y}, {normal.Z}");
-                //}
-                //Console.WriteLine();
-                //Console.WriteLine("Indices:");
-                //var x = 0;
-                //while (x < mesh.Indices.Length)
-                //{
-                //    Console.WriteLine($"{mesh.Indices[x++]}, {mesh.Indices[x++]}, {mesh.Indices[x++]}");
-                //}
             }
         });
     }
