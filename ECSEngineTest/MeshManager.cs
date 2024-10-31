@@ -9,7 +9,7 @@ public static class MeshManager
     private static uint _currentVAO = 0;
     private static readonly Dictionary<int, MeshComponent> _meshes = [];
 
-    public static unsafe MeshComponent CreateMeshComponent(Span<Vector3> vertices, Span<Vector3> normals, Span<Vector2> uvs, uint[] indices)
+    public static unsafe MeshComponent CreateMeshComponent(Span<Vector3> vertices, Span<Vector3> normals, Span<Vector3> uvs, uint[] indices)
     {
         bool isTexture;
         if (vertices.IsEmpty || vertices.Length != normals.Length || ((isTexture = uvs != null && !uvs.IsEmpty) && vertices.Length != uvs.Length))
@@ -37,7 +37,7 @@ public static class MeshManager
         return component;
     }
 
-    private static int ComputeVertexHash(Span<Vector3> vertices, Span<Vector3> normals, Span<Vector2> uvs)
+    private static int ComputeVertexHash(Span<Vector3> vertices, Span<Vector3> normals, Span<Vector3> uvs)
     {
         var hash = 0;
 
@@ -88,7 +88,7 @@ public static class MeshManager
         return vbo;
     }
 
-    private static unsafe uint GenVBO(Span<Vector3> vertices, Span<Vector3> normals, Span<Vector2> uvs, out VertexTextureData[] data)
+    private static unsafe uint GenVBO(Span<Vector3> vertices, Span<Vector3> normals, Span<Vector3> uvs, out VertexTextureData[] data)
     {
         var vbo = Window.GL.GenBuffer();
         Window.GL.BindBuffer(BufferTargetARB.ArrayBuffer, vbo);
@@ -98,7 +98,7 @@ public static class MeshManager
         {
             data[i].Vertex = vertices[i];
             data[i].Normal = normals[i];
-            data[i].UVs = uvs[i];
+            data[i].UVs = new Vector2(uvs[i].X, uvs[i].Y);
         }
 
         fixed (void* dataPtr = &data[0])

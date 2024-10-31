@@ -1,5 +1,6 @@
 ﻿//using MyEngine;
 using ECSEngineTest;
+using System.Numerics;
 
 namespace SomeGame;
 
@@ -22,6 +23,11 @@ public class Program
     private static void InitApp(Application app)
     {
         var scene = app.CreateScene("Test");
+
+        scene.EntityFactory.CreateCamera("Main Camera")
+                           .SetPosition(new Vector3(0.0f, 0.0f, 20.0f))
+                           .Build();
+
         //scene.Loader.LoadScene(@"..\..\..\..\ECSEngineTest\Assets\Models\concrete_trash_bin_fixed_transforms.glb");
         //scene.Loader.LoadScene(@"..\..\..\..\ECSEngineTest\Assets\Models\concrete_trash_bin_fixed_transforms.gltf");
         //scene.Loader.LoadScene(@"..\..\..\..\ECSEngineTest\Assets\Models\concrete_trash_bin.gltf");
@@ -32,10 +38,5 @@ public class Program
         //scene.Loader.LoadScene(@"..\..\..\..\ECSEngineTest\Assets\Models\spider_light.glb");
         //scene.Loader.LoadScene(@"..\..\..\..\ECSEngineTest\Assets\Models\spider_light.gltf");
         //scene.Loader.LoadScene(@"..\..\..\..\ECSEngineTest\Assets\Models\pink_cube.glb");
-
-        scene.EntityFactory.CreateCamera("Main Camera")
-                           .SetPosition(new System.Numerics.Vector3(0.0f, 5.0f, 20.0f))
-                           .SetActive()
-                           .Build();
     }
 }

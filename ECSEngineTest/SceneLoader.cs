@@ -166,7 +166,7 @@ public class SceneLoader : IDisposable
         
         entity.AddComponent(MeshManager.CreateMeshComponent(new Span<Vector3>(mesh->MVertices, (int)mesh->MNumVertices),
                                                             new Span<Vector3>(mesh->MNormals, (int)mesh->MNumVertices),
-                                                            isTexture ? new Span<Vector2>(mesh->MTextureCoords.Element0, (int)mesh->MNumVertices) : null,
+                                                            isTexture ? new Span<Vector3>(mesh->MTextureCoords.Element0, (int)mesh->MNumVertices) : null,
                                                             [.. indices]));
     }
 
