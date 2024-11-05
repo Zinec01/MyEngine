@@ -2,11 +2,11 @@
 
 namespace ECSEngineTest;
 
-public struct Interpolatable<T> where T : struct
+public class Interpolatable<T> where T : struct
 {
     public T Previous { get; private set; }
     public T Current { get; private set; }
-    public T Target { get; set; }
+    public T Target { get; private set; }
 
     public Interpolatable(T initialValue)
     {
@@ -15,10 +15,20 @@ public struct Interpolatable<T> where T : struct
 
     public Interpolatable() : this(default) { }
 
-    public void Lerp(float amount)
+    public Interpolatable<T> Lerp(float amount)
     {
         Previous = Current;
         Current = Lerp(Current, Target, amount);
+
+        return this;
+    }
+
+    public Interpolatable<T> Set(T value)
+    {
+        Previous = Current;
+        Current = Target = value;
+
+        return this;
     }
 
     private static T Lerp(T a, T b, float t)
@@ -46,6 +56,6 @@ public struct Interpolatable<T> where T : struct
         return (T)res;
     }
 
-    public override readonly string ToString()
+    public override string ToString()
         => Previous.ToString() + "  ->  " + Current.ToString() + "  ->  " + Target.ToString();
 }

@@ -1,12 +1,11 @@
 ﻿using Friflo.Engine.ECS;
 using Friflo.Engine.ECS.Systems;
+using Silk.NET.Input;
 using Silk.NET.OpenGL;
-using System.Diagnostics;
-using System.Drawing;
 
 namespace ECSEngineTest;
 
-public class Scene : IDisposable
+public class Scene : Layer, IDisposable
 {
     private static uint _idGen = 0;
 
@@ -21,7 +20,7 @@ public class Scene : IDisposable
     public SceneLoader Loader { get; }
     public ShaderManager ShaderManager { get; }
 
-    public Scene(string name)
+    public Scene(string name) : base(name, 0)
     {
         Id = _idGen++;
         Name = name;
@@ -37,19 +36,67 @@ public class Scene : IDisposable
         {
             //new TestSystem()
         };
+
+        //EventManager.InputEvent += (sender, args) =>
+        //{
+        //    if (!args.EventType.HasFlag(EventTypeFlags.KeyboardEvent) || args.Data is not IKeyboard keyboard)
+        //        return;
+
+        //    if (keyboard.IsKeyPressed(Key.ControlLeft) && keyboard.IsKeyPressed(Key.R))
+        //    {
+        //        var query = _store.Query<EntityName>();
+        //        if (query.Count > 0)
+        //        {
+        //            var cb = _store.GetCommandBuffer().Synced;
+        //            query.ForEach((components, entities) =>
+        //            {
+        //                for (int i = 0; i < entities.Length; i++)
+        //                {
+        //                    if (components[i].value == "Main Camera")
+        //                        continue;
+
+        //                    cb.DeleteEntity(entities[i]);
+        //                }
+        //            }).RunParallel();
+
+        //            Console.WriteLine("Thread ID inside event: " + Environment.CurrentManagedThreadId);
+        //            MainThreadDispatcher.Enqueue(() =>
+        //            {
+        //                Console.WriteLine("Thread ID inside enqueued action: " + Environment.CurrentManagedThreadId);
+        //                cb.Playback();
+        //            });
+        //        }
+        //    }
+        //};
+
+        EventManager.MouseDown += (sender, args) =>
+        {
+
+        };
     }
 
-    internal void OnUpdate(double deltaTime)
+    //internal void OnUpdate(double deltaTime)
+    //{
+    //    _rootSystem.Update(new UpdateTick((float)deltaTime, (float)(DateTime.Now - Application.AppStart).TotalSeconds));
+    //}
+
+    //internal void OnRender(double deltaTime)
+    //{
+    //    Window.GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+    //    Renderer.RenderScene(_store, deltaTime);
+    //}
+
+    internal override void OnUpdate(object? sender, LayerEventArgs args)
     {
-        _rootSystem.Update(new UpdateTick((float)deltaTime, (float)(DateTime.Now - Application.AppStart).TotalSeconds));
+        _rootSystem.Update(new UpdateTick((float)args.DeltaTime, (float)(DateTime.Now - Application.AppStart).TotalSeconds));
     }
 
-    internal void OnRender(double deltaTime)
+    internal override void OnRender(object? sender, LayerEventArgs args)
     {
-        Window.GL.ClearColor(Color.FromArgb(222, 235, 255));
         Window.GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-        Renderer.RenderScene(_store, deltaTime);
+        Renderer.RenderScene(_store, args.DeltaTime);
     }
 
     public void Dispose()

@@ -6,8 +6,9 @@ namespace ECSEngineTest;
 
 public static class MeshManager
 {
-    private static uint _currentVAO = 0;
     private static readonly Dictionary<int, MeshComponent> _meshes = [];
+
+    private static uint _currentVAO = uint.MaxValue;
 
     public static unsafe MeshComponent CreateMeshComponent(Span<Vector3> vertices, Span<Vector3> normals, Span<Vector3> uvs, uint[] indices)
     {
@@ -76,7 +77,7 @@ public static class MeshManager
         data = new VertexData[vertices.Length];
         for (int i = 0; i < vertices.Length; i++)
         {
-            data[i].Vertex = vertices[i];
+            data[i].Position = vertices[i];
             data[i].Normal = normals[i];
         }
 
@@ -96,7 +97,7 @@ public static class MeshManager
         data = new VertexTextureData[vertices.Length];
         for (int i = 0; i < vertices.Length; i++)
         {
-            data[i].Vertex = vertices[i];
+            data[i].Position = vertices[i];
             data[i].Normal = normals[i];
             data[i].UVs = new Vector2(uvs[i].X, uvs[i].Y);
         }

@@ -99,7 +99,8 @@ public class CameraBuilder(EntityStore store, string name)
                                                                 _farPlane)
         };
 
-        CameraManager.SetUBOData(ref cameraComponent);
+        if (active)
+            CameraManager.SetUBOData(ref cameraComponent);
 
         var transformComponent = _transform.IsIdentity
                                     ? new TransformComponent(_position, _rotation, Vector3.One)

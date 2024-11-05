@@ -12,7 +12,9 @@ public class ShaderManager
 
     private static readonly List<ShaderInfo> _shaders = [];
     private static readonly Dictionary<string, ShaderProgramComponent> _shaderPrograms = [];
-    private static readonly Dictionary<string, int> _uniformLocations = [];
+    private static readonly Dictionary<uint, Dictionary<string, int>> _uniformLocations = [];
+
+    private static uint _activeProgramId = uint.MaxValue;
 
     public ShaderProgramComponent DefaultTexture { get; }
     public ShaderProgramComponent DefaultColor { get; }
@@ -75,9 +77,9 @@ public class ShaderManager
 
         var glType = type switch
         {
-            ShaderType.Vertex => Silk.NET.OpenGL.ShaderType.VertexShader,
+            ShaderType.Vertex   => Silk.NET.OpenGL.ShaderType.VertexShader,
             ShaderType.Fragment => Silk.NET.OpenGL.ShaderType.FragmentShader,
-            ShaderType.Compute => Silk.NET.OpenGL.ShaderType.ComputeShader,
+            ShaderType.Compute  => Silk.NET.OpenGL.ShaderType.ComputeShader,
             ShaderType.Geometry => Silk.NET.OpenGL.ShaderType.GeometryShader,
             _ => throw new NotImplementedException()
         };
@@ -183,7 +185,11 @@ public class ShaderManager
 
     public static void UseShaderProgram(uint programId)
     {
+        if (_activeProgramId == programId)
+            return;
+
         Window.GL.UseProgram(programId);
+        _activeProgramId = programId;
     }
 
     public static void DeleteShaderProgram(uint programId)
@@ -265,14 +271,23 @@ public class ShaderManager
 
     private static bool TryGetUniformLocation(uint programId, string varName, out int location)
     {
-        if (_uniformLocations.TryGetValue(varName, out location))
+        if (_uniformLocations.TryGetValue(programId, out var locations)
+            && locations.TryGetValue(varName, out location))
         {
             return true;
         }
         else
         {
             location = Window.GL.GetUniformLocation(programId, varName);
-            _uniformLocations.Add(varName, location);
+            if (_uniformLocations.TryGetValue(programId, out locations))
+            {
+                locations.Add(varName, location);
+            }
+            else
+            {
+                locations = new Dictionary<string, int> { [varName] = location };
+                _uniformLocations.Add(programId, locations);
+            }
 
             return location >= 0;
         }
@@ -327,10 +342,10 @@ public class ShaderManager
 
             _shaderPrograms[programKvp.Key] = program;
 
+            var cb = _entityStore.GetCommandBuffer().Synced;
             _entityStore.Query<ShaderProgramComponent>()
                         .ForEach((components, entities) =>
             {
-                var cb = _entityStore.GetCommandBuffer().Synced;
                 for (int i = 0; i < entities.Length; i++)
                 {
                     if (components[i].Id != program.Id)
@@ -339,6 +354,8 @@ public class ShaderManager
                     cb.AddComponent(entities.Ids[i], program);
                 }
             }).RunParallel();
+
+            MainThreadDispatcher.Enqueue(cb.Playback);
         }
     }
 

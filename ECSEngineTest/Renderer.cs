@@ -77,7 +77,7 @@ public class Renderer
                     tmpEntity = tmpEntity.Parent;
                 }
 
-                tmpTransform *= Matrix4x4.CreateTranslation(new Vector3(x, y, 0));
+                //tmpTransform *= (Matrix4x4.Identity * Matrix4x4.CreateScale(new Vector3(1, 1, 1)) * Matrix4x4.CreateFromQuaternion(Quaternion.Identity) * Matrix4x4.CreateTranslation(new Vector3(x, y, 0)));
 
                 ShaderManager.SetUniformVariable(shaderProgram.Id, ShaderUniforms.ModelMatrix, tmpTransform);
 

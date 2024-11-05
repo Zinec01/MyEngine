@@ -8,6 +8,8 @@ public static class TextureManager
 {
     private static readonly List<TextureComponent> _textures = [];
 
+    private static uint _activeTextureId = uint.MaxValue;
+
     public static TextureComponent GetTexture(string texturePath)
     {
         return IsLoaded(texturePath)
@@ -88,8 +90,13 @@ public static class TextureManager
 
     public static void ActivateTexture(uint textureId)
     {
+        if (_activeTextureId == textureId)
+            return;
+
         Window.GL.ActiveTexture(TextureUnit.Texture0);
         Window.GL.BindTexture(TextureTarget.Texture2D, textureId);
+
+        _activeTextureId = textureId;
     }
 
     public static void DeactivateCurrentTexture()

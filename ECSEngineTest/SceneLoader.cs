@@ -10,7 +10,7 @@ namespace ECSEngineTest;
 
 public class SceneLoader : IDisposable
 {
-    private readonly Assimp _assimp = Assimp.GetApi();
+    private readonly Assimp _assimp;
     private readonly EntityStore _entityStore;
     private readonly ShaderManager _shaderManager;
     private readonly EntityFactory _entityFactory;
@@ -19,6 +19,7 @@ public class SceneLoader : IDisposable
 
     public SceneLoader(EntityStore entityStore, ShaderManager shaderManager, EntityFactory entityFactory)
     {
+        _assimp = Assimp.GetApi();
         _entityStore = entityStore;
         _shaderManager = shaderManager;
         _entityFactory = entityFactory;
@@ -48,6 +49,20 @@ public class SceneLoader : IDisposable
             FileChangeWatcher.SubscribeForFileChanges(filePath, (_, _) => SceneFileChanged(filePath));
 
         _currentDirectory = string.Empty;
+
+        Console.WriteLine($"Loaded {processed} entities from {Path.GetFileName(filePath)}:");
+        PrintEntities(_entityStore.Entities.Where(x => x.Id > _entityStore.Count - processed && x.Parent.IsNull), 0);
+    }
+
+    private static void PrintEntities(IEnumerable<Entity> entities, int depth)
+    {
+        Console.OutputEncoding = System.Text.Encoding.Unicode;
+        foreach (var entity in entities)
+        {
+            Console.WriteLine($"{new string(' ', Math.Max(depth - 1, 0) * 2)}\u2517\u2501{entity}");
+            if (entity.ChildCount > 0)
+                PrintEntities(entity.ChildEntities, depth + 1);
+        }
     }
 
     private unsafe Silk.NET.Assimp.Scene* LoadSceneFromFile(string filePath)
@@ -78,7 +93,7 @@ public class SceneLoader : IDisposable
             if (entity == null)
             {
                 entity = _entityStore.CreateEntity(new EntityName(node->MName));
-                entity.Value.AddComponent(new TransformComponent(node->MTransformation));
+                entity.Value.AddComponent(new TransformComponent(GetNodeTransform(node)));
             }
             entity.Value.AddTag<MeshObjectTag>();
 
@@ -96,7 +111,7 @@ public class SceneLoader : IDisposable
         {
             entity = _entityStore.CreateEntity(new EntityName(node->MName));
             entity.Value.AddTag<NodeTag>();
-            entity.Value.AddComponent(new TransformComponent(node->MTransformation));
+            entity.Value.AddComponent(new TransformComponent(GetNodeTransform(node)));
 
             parentEntity?.AddChild(entity.Value);
 
@@ -234,7 +249,7 @@ public class SceneLoader : IDisposable
                 OuterConeAngle = light->MAngleOuterCone,
             });
             entity.AddComponent(new ColorComponent(new Vector4(light->MColorDiffuse, 1f)));
-            entity.AddComponent(new TransformComponent(lightNode->MTransformation));
+            entity.AddComponent(new TransformComponent(GetNodeTransform(lightNode)));
 
             rootEntity?.AddChild(entity);
         }
@@ -250,7 +265,7 @@ public class SceneLoader : IDisposable
             var cameraNode = GetNodeByName(scene->MRootNode, camera->MName);
             
             var entity = _entityFactory.CreateCamera(camera->MName)
-                                       .SetTransformation(cameraNode->MTransformation)
+                                       .SetTransformation(GetNodeTransform(cameraNode))
                                        .SetAspectRatio(camera->MAspect)
                                        .SetNearFarClipPlane(camera->MClipPlaneNear, camera->MClipPlaneFar)
                                        .SetFieldOfView(camera->MHorizontalFOV)
@@ -286,16 +301,22 @@ public class SceneLoader : IDisposable
 
     private unsafe Matrix4x4 GetNodeFinalTransform(Node* node)
     {
-        var transform = node->MTransformation;
+        var transform = GetNodeTransform(node);
 
         while (node->MParent != null)
         {
             node = node->MParent;
-            if (node->MTransformation != Matrix4x4.Identity)
-                transform *= node->MTransformation;
+            var parentTransform = GetNodeTransform(node);
+            if (parentTransform != Matrix4x4.Identity)
+                transform *= parentTransform;
         }
 
         return transform;
+    }
+
+    private unsafe Matrix4x4 GetNodeTransform(Node* node)
+    {
+        return Matrix4x4.Transpose(node->MTransformation);
     }
 
     private unsafe bool DoesNodeContainMeshes(Node* node)

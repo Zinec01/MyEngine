@@ -1,6 +1,7 @@
 ﻿using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
+using Silk.NET.OpenGL.Extensions.ImGui;
 using Silk.NET.Windowing;
 using System.Numerics;
 
@@ -9,7 +10,7 @@ namespace ECSEngineTest;
 public class Window
 {
     private readonly IWindow _window;
-    private IInputContext InputContext { get; set; }
+    private IInputContext _inputContext;
     internal static GL GL { get; private set; }
 
     public WindowState State => (WindowState)(int)_window.WindowState;
@@ -37,7 +38,6 @@ public class Window
         _window.FramebufferResize += OnWindowFramebufferResize;
         _window.Closing += OnWindowClosing;
         _window.FileDrop += OnWindowFileDrop;
-        //_window.Initialize();
     }
 
     public void Run()
@@ -47,26 +47,49 @@ public class Window
         _window.Dispose();
     }
 
+    public void Close()
+    {
+        _window.Close();
+    }
+
+    public ImGuiController CreateImGui()
+    {
+        return new ImGuiController(GL, _window, _inputContext);
+    }
+
     private void OnWindowLoad()
     {
-        InputContext = _window.CreateInput();
+        _inputContext = _window.CreateInput();
         GL = GL.GetApi(_window);
         _window.Center();
 
-        foreach (var keyboard in InputContext.Keyboards)
+        foreach (var keyboard in _inputContext.Keyboards)
         {
             keyboard.KeyDown += (sender, key, code) =>
             {
-                if (key == Key.Escape) _window.Close();
+                if (key == Key.Escape)
+                {
+                    Close();
+                    return;
+                }
+
+                //EventManager.RaiseEvent(EventTypeFlags.KeyboardEvent, this, sender);
             };
         }
 
+        foreach (var mouse in _inputContext.Mice)
+        {
+            mouse.MouseDown += (sender, button) => EventManager.RaiseEvent(EventTypeFlags.MouseDown, new EventRaiseDto { Sender = this, Data = [(Input.MouseButton)(int)button] });
+            mouse.MouseUp += (sender, button) => EventManager.RaiseEvent(EventTypeFlags.MouseUp, new EventRaiseDto { Sender = this, Data = [(Input.MouseButton)(int)button] });
+        }
+
+        _inputContext.ConnectionChanged += (sender, args) =>
+        {
+            //EventManager.RaiseEvent(EventTypeFlags.InputConnectionChanged, this, args);
+        };
+
         _window.FileDrop += (files) =>
         {
-            foreach (var file in files)
-            {
-                Console.WriteLine(file);
-            }
         };
 
         OnLoad?.Invoke();
@@ -75,6 +98,7 @@ public class Window
     private void OnWindowUpdate(double dt)
     {
         OnUpdate?.Invoke(dt);
+        MainThreadDispatcher.ExecuteOnMainThread();
     }
 
     private void OnWindowRender(double dt)
