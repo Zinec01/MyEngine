@@ -1,28 +1,30 @@
-﻿using ECSEngineTest.Helpers;
-using Silk.NET.OpenGL;
+﻿using Silk.NET.OpenGL;
 using System.Drawing;
 
 namespace ECSEngineTest;
 
 public class Application : IDisposable
 {
-    private readonly SortedList<int, Layer> _layers = [];
+    private readonly SortedList<int, Layer?> _layers = [];
     private readonly List<Scene> _scenes = [];
     private readonly Window _mainWindow;
-
-    private Scene? _activeScene = null;
 
     public static DateTime AppStart { get; private set; }
 
     public IReadOnlyList<Scene> Scenes => _scenes;
     public Scene? ActiveScene
     {
-        get => _activeScene;
+        get => _scenes.FirstOrDefault(x => x.Enabled);
         set
         {
-            if (value is null) return;
+            var currentScene =  _scenes.FirstOrDefault(x => x.Id == value?.Id);
+            if (currentScene != null)
+                currentScene.Enabled = false;
 
-            _layers[0] = _activeScene = value;
+            if (value != null)
+                value.Enabled = true;
+
+            _layers[0] = value;
         }
     }
 
@@ -31,14 +33,14 @@ public class Application : IDisposable
     public Application(WindowSettings windowSettings)
     {
         _mainWindow = new(windowSettings);
-        _mainWindow.OnLoad += OnMainWindowLoad;
-        _mainWindow.OnClosing += OnMainWindowClosing;
-        _mainWindow.OnFileDrop += OnMainWindowFileDrop;
         _mainWindow.OnUpdate += OnMainWindowUpdate;
         _mainWindow.OnRender += OnMainWindowRender;
+
+        EventManager.WindowLoaded += OnMainWindowLoaded;
+        EventManager.WindowClosing += OnMainWindowClosing;
     }
 
-    private void OnMainWindowLoad()
+    private void OnMainWindowLoaded(object? sender, WindowLoadedEventArgs e)
     {
         CreateEditor();
 
@@ -54,27 +56,11 @@ public class Application : IDisposable
         Init?.Invoke(this);
     }
 
-    private void CreateEditor()
-    {
-        _layers[1] = new EditorLayer("ImGui Editor", _mainWindow.CreateImGui());
-    }
-
-    private void OnMainWindowClosing()
+    private void OnMainWindowClosing(object? sender, WindowClosingEventArgs e)
     {
         ShaderManager.Dispose();
         ShaderUniforms.Dispose();
         MeshManager.DisposeAllMeshes();
-    }
-
-    private void OnMainWindowFileDrop(string[] filePaths)
-    {
-        for (int i = 0; i < filePaths.Length; i++)
-        {
-            var filePath = filePaths[i];
-
-            if (FileHelper.ValidateFilePath(ref filePath) && FileHelper.IsSupportedModelFile(filePath))
-                ActiveScene?.Loader.LoadScene(filePath);
-        }
     }
 
     private void OnMainWindowUpdate(double deltaTime)
@@ -82,8 +68,8 @@ public class Application : IDisposable
         var args = new LayerEventArgs(deltaTime);
         for (int i = _layers.Count - 1; i >= 0; i--)
         {
-            var layer = _layers[i];
-            if (layer is null || !layer.Enabled) continue;
+            if (!_layers.TryGetValue(i, out var layer) || layer is null || !layer.Enabled)
+                continue;
 
             layer.OnUpdate(this, args);
 
@@ -96,8 +82,8 @@ public class Application : IDisposable
         var args = new LayerEventArgs(deltaTime);
         for (int i = 0; i < _layers.Count; i++)
         {
-            var layer = _layers[i];
-            if (layer is null || !layer.Enabled) continue;
+            if (!_layers.TryGetValue(i, out var layer) || layer is null || !layer.Enabled)
+                continue;
 
             layer.OnRender(this, args);
 
@@ -109,11 +95,15 @@ public class Application : IDisposable
     {
         var scene = new Scene(name);
 
+        ActiveScene ??= scene;
         _scenes.Add(scene);
 
-        ActiveScene ??= scene;
-
         return scene;
+    }
+
+    private void CreateEditor()
+    {
+        _layers[1] = new Editor("ImGui Editor", _mainWindow.CreateImGui());
     }
 
     public void DeleteScene(uint sceneId)

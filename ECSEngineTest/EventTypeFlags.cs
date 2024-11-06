@@ -13,8 +13,8 @@ public enum EventTypeFlags
     MouseDoubleClick       = 0b_0000_0000_0010_0000,
     MouseEvent             = 0b_0000_0000_0011_1111,
                            
-    KeyboardUp             = 0b_0000_0000_0100_0000,
-    KeyboardDown           = 0b_0000_0000_1000_0000,
+    KeyUp                  = 0b_0000_0000_0100_0000,
+    KeyDown                = 0b_0000_0000_1000_0000,
     KeyboardEvent          = 0b_0000_0000_1100_0000,
 
     InputConnectionChanged = 0b_0000_0001_0000_0000,

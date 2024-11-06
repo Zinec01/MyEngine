@@ -1,4 +1,5 @@
-﻿using Friflo.Engine.ECS;
+﻿using ECSEngineTest.Helpers;
+using Friflo.Engine.ECS;
 using Friflo.Engine.ECS.Systems;
 using Silk.NET.Input;
 using Silk.NET.OpenGL;
@@ -37,55 +38,15 @@ public class Scene : Layer, IDisposable
             //new TestSystem()
         };
 
-        //EventManager.InputEvent += (sender, args) =>
-        //{
-        //    if (!args.EventType.HasFlag(EventTypeFlags.KeyboardEvent) || args.Data is not IKeyboard keyboard)
-        //        return;
-
-        //    if (keyboard.IsKeyPressed(Key.ControlLeft) && keyboard.IsKeyPressed(Key.R))
-        //    {
-        //        var query = _store.Query<EntityName>();
-        //        if (query.Count > 0)
-        //        {
-        //            var cb = _store.GetCommandBuffer().Synced;
-        //            query.ForEach((components, entities) =>
-        //            {
-        //                for (int i = 0; i < entities.Length; i++)
-        //                {
-        //                    if (components[i].value == "Main Camera")
-        //                        continue;
-
-        //                    cb.DeleteEntity(entities[i]);
-        //                }
-        //            }).RunParallel();
-
-        //            Console.WriteLine("Thread ID inside event: " + Environment.CurrentManagedThreadId);
-        //            MainThreadDispatcher.Enqueue(() =>
-        //            {
-        //                Console.WriteLine("Thread ID inside enqueued action: " + Environment.CurrentManagedThreadId);
-        //                cb.Playback();
-        //            });
-        //        }
-        //    }
-        //};
-
-        EventManager.MouseDown += (sender, args) =>
-        {
-
-        };
+        EventManager.MouseDown += OnMouseDown;
+        EventManager.MouseUp += OnMouseUp;
+        EventManager.MouseClick += OnMouseClick;
+        EventManager.MouseDoubleClick += OnMouseDoubleClick;
+        EventManager.MouseScroll += OnMouseScroll;
+        EventManager.KeyDown += OnKeyDown;
+        EventManager.KeyUp += OnKeyUp;
+        EventManager.WindowFileDrop += OnFileDrop;
     }
-
-    //internal void OnUpdate(double deltaTime)
-    //{
-    //    _rootSystem.Update(new UpdateTick((float)deltaTime, (float)(DateTime.Now - Application.AppStart).TotalSeconds));
-    //}
-
-    //internal void OnRender(double deltaTime)
-    //{
-    //    Window.GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-    //    Renderer.RenderScene(_store, deltaTime);
-    //}
 
     internal override void OnUpdate(object? sender, LayerEventArgs args)
     {
@@ -97,6 +58,80 @@ public class Scene : Layer, IDisposable
         Window.GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
         Renderer.RenderScene(_store, args.DeltaTime);
+    }
+
+    private void OnMouseClick(object? sender, MouseClickEventArgs e)
+    {
+        Console.WriteLine($"Scene:\tMouse Click - {e.Button}");
+    }
+
+    private void OnMouseDoubleClick(object? sender, MouseClickEventArgs e)
+    {
+        Console.WriteLine($"Scene:\tMouse Double Click - {e.Button}");
+    }
+
+    private void OnMouseScroll(object? sender, MouseScrollEventArgs e)
+    {
+        Console.WriteLine($"Scene:\tMouse Scroll - X: {e.X}, Y: {e.Y}");
+    }
+
+    private void OnKeyDown(object? sender, KeyDownEventArgs e)
+    {
+        Console.WriteLine($"Scene:\tKey Down - {e.Keys.Select(x => x.ToString()).Aggregate((c, n) => c + ", " + n)}");
+
+        if (e.Keys.Length == 2 && e.Keys.Contains(Input.Key.ControlLeft) && e.Keys.Contains(Input.Key.R))
+        {
+            var query = _store.Query<EntityName>();
+            if (query.Count > 0)
+            {
+                var cb = _store.GetCommandBuffer().Synced;
+                query.ForEach((components, entities) =>
+                {
+                    for (int i = 0; i < entities.Length; i++)
+                    {
+                        if (components[i].value == "Main Camera")
+                            continue;
+
+                        cb.DeleteEntity(entities[i]);
+                    }
+                }).RunParallel();
+
+                Console.WriteLine("Thread ID inside event: " + Environment.CurrentManagedThreadId);
+                MainThreadDispatcher.Enqueue(() =>
+                {
+                    Console.WriteLine("Thread ID inside enqueued action: " + Environment.CurrentManagedThreadId);
+                    cb.Playback();
+                });
+            }
+        }
+    }
+
+    private void OnKeyUp(object? sender, KeyUpEventArgs e)
+    {
+        Console.WriteLine($"Scene:\tKey Down - {e.Key}");
+    }
+
+    private void OnFileDrop(object? sender, WindowFileDropEventArgs e)
+    {
+        Console.WriteLine($"Scene:\tFile Drop - {e.FilePaths.Select(x => Path.GetFileName(x)).Aggregate((c, n) => c + ", " + n)}");
+
+        for (int i = 0; i < e.FilePaths.Length; i++)
+        {
+            var filePath = e.FilePaths[i];
+
+            if (FileHelper.ValidateFilePath(ref filePath) && FileHelper.IsSupportedModelFile(filePath))
+                Loader.LoadScene(filePath);
+        }
+    }
+
+    public void OnMouseDown(object? sender, MouseDownEventArgs e)
+    {
+        Console.WriteLine($"Scene:\tMouse Down - {e.Buttons.Select(x => x.ToString()).Aggregate((c, n) => c + ", " + n)}");
+    }
+
+    public void OnMouseUp(object? sender, MouseUpEventArgs e)
+    {
+        Console.WriteLine($"Scene:\tMouse Up - {e.Button}");
     }
 
     public void Dispose()

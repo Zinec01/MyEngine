@@ -5,17 +5,25 @@ using System.Numerics;
 
 namespace ECSEngineTest.Builders;
 
-public class CameraBuilder(EntityStore store, string name)
+public class CameraBuilder
 {
-    private readonly string _name = name;
-    private Quaternion _rotation = Quaternion.Identity;
+    private readonly EntityStore _store;
+    private readonly string _name;
+
     private Vector3 _position = Vector3.Zero;
+    private Quaternion _rotation = Quaternion.Identity;
     private Matrix4x4 _transform = Matrix4x4.Identity;
     private float _fov = 90.0f;
     private float _nearPlane = 0.1f;
     private float _farPlane = 1000.0f;
     private float _aspectRatio = 16.0f / 9.0f;
     private bool _active = false;
+
+    public CameraBuilder(EntityStore store, string name)
+    {
+        _store = store;
+        _name = name;
+    }
 
     public CameraBuilder SetRotation(Quaternion rotation)
     {
@@ -31,7 +39,7 @@ public class CameraBuilder(EntityStore store, string name)
         return this;
     }
 
-    public CameraBuilder SetTransformation(Matrix4x4 transformation)
+    public CameraBuilder SetTransform(Matrix4x4 transformation)
     {
         _transform = transformation;
 
@@ -69,7 +77,7 @@ public class CameraBuilder(EntityStore store, string name)
 
     public Entity Build()
     {
-        var cameraEntities = store.Query<CameraComponent>();
+        var cameraEntities = _store.Query<CameraComponent>();
         if (_active && cameraEntities.Count > 0)
         {
             cameraEntities.ForEachEntity((ref CameraComponent camera, Entity entity) =>
@@ -80,6 +88,9 @@ public class CameraBuilder(EntityStore store, string name)
         }
 
         var active = _active || cameraEntities.Count == 0;
+
+        if (!_transform.IsIdentity)
+            Matrix4x4.Decompose(_transform, out _, out _rotation, out _position);
 
         var forward = Vector3.Transform(-Vector3.UnitZ, _rotation);
         var target = _position + forward;
@@ -106,7 +117,7 @@ public class CameraBuilder(EntityStore store, string name)
                                     ? new TransformComponent(_position, _rotation, Vector3.One)
                                     : new TransformComponent(_transform);
 
-        var entity = store.CreateEntity(new EntityName(_name), cameraComponent, transformComponent);
+        var entity = _store.CreateEntity(new EntityName(_name), cameraComponent, transformComponent);
         entity.AddTag<CameraTag>();
         entity.Enabled = active;
 

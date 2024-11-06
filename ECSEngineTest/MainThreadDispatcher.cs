@@ -16,8 +16,8 @@ public static class MainThreadDispatcher
         while (_mainThreadActions.TryDequeue(out var action))
         {
             Console.WriteLine("Thread ID in queue execution: " + Environment.CurrentManagedThreadId);
-            SynchronizationContext.Current?.Post(_ => action?.Invoke(), null);
-            //action?.Invoke();
+            //SynchronizationContext.Current?.Post(_ => action?.Invoke(), null);
+            action?.Invoke();
         }
     }
 }

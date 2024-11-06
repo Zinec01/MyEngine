@@ -29,39 +29,34 @@ public static class EventManager
 
     internal static void RaiseEvent(EventTypeFlags eventType, EventRaiseDto data)
     {
-        if (data.Data == null) return;
+        if (data == null || data.Data is null && !(eventType == EventTypeFlags.WindowLoaded || eventType == EventTypeFlags.WindowClosing))
+            return;
 
         switch (eventType)
         {
             case EventTypeFlags.MouseMove:
-                InvokeEvent(MouseMove, data.Sender, new MouseMoveEventArgs((Vector2)data.Data[0]));
+                InvokeEvent(MouseMove, data.Sender, new MouseMoveEventArgs((Vector2)data.Data![0]));
                 break;
             case EventTypeFlags.MouseScroll:
-                InvokeEvent(MouseScroll, data.Sender, new MouseScrollEventArgs((int)data.Data[0], (int)data.Data[1]));
+                InvokeEvent(MouseScroll, data.Sender, new MouseScrollEventArgs((int)data.Data![0], (int)data.Data[1]));
                 break;
             case EventTypeFlags.MouseUp:
-                InvokeEvent(MouseUp, data.Sender, new MouseUpEventArgs((MouseButton)data.Data[0]));
+                InvokeEvent(MouseUp, data.Sender, new MouseUpEventArgs((MouseButton)data.Data![0]));
                 break;
             case EventTypeFlags.MouseDown:
-                InvokeEvent(MouseDown, data.Sender, new MouseDownEventArgs((MouseButton)data.Data[0]));
+                InvokeEvent(MouseDown, data.Sender, new MouseDownEventArgs((MouseButton[])data.Data![0]));
                 break;
             case EventTypeFlags.MouseClick:
-                InvokeEvent(MouseClick, data.Sender, new MouseClickEventArgs((MouseButton)data.Data[0], (Vector2)data.Data[1]));
+                InvokeEvent(MouseClick, data.Sender, new MouseClickEventArgs((Vector2)data.Data![0], (MouseButton)data.Data[1]));
                 break;
             case EventTypeFlags.MouseDoubleClick:
-                InvokeEvent(MouseDoubleClick, data.Sender, new MouseClickEventArgs((MouseButton)data.Data[0], (Vector2)data.Data[1]));
+                InvokeEvent(MouseDoubleClick, data.Sender, new MouseClickEventArgs((Vector2)data.Data![0], (MouseButton)data.Data[1]));
                 break;
-            case EventTypeFlags.MouseEvent:
-                InvokeEvent(MouseEvent, data.Sender, new MouseEventArgs(eventType, (MouseButton)data.Data[0], (Vector2)data.Data[1], (int)data.Data[2], (int)data.Data[3]));
+            case EventTypeFlags.KeyUp:
+                InvokeEvent(KeyUp, data.Sender, new KeyUpEventArgs((Key)data.Data![0]));
                 break;
-            case EventTypeFlags.KeyboardUp:
-                InvokeEvent(KeyUp, data.Sender, new KeyUpEventArgs((Key)data.Data[0], (int)data.Data[1]));
-                break;
-            case EventTypeFlags.KeyboardDown:
-                InvokeEvent(KeyDown, data.Sender, new KeyDownEventArgs((Key)data.Data[0], (int)data.Data[1]));
-                break;
-            case EventTypeFlags.KeyboardEvent:
-                InvokeEvent(KeyboardEvent, data.Sender, new KeyboardEventArgs(eventType, (Key)data.Data[0], (int)data.Data[1]));
+            case EventTypeFlags.KeyDown:
+                InvokeEvent(KeyDown, data.Sender, new KeyDownEventArgs((Key[])data.Data![0]));
                 break;
             //case EventTypeFlags.InputConnectionChanged:
             //    InputConnectionChanged?.Invoke(data.Sender, new InputConnectionChangedEventArgs((InputConnection)data.Data));
@@ -69,23 +64,54 @@ public static class EventManager
             //case EventTypeFlags.InputEvent:
             //    InputEvent?.Invoke(data.Sender, new InputEventArgs(eventType, (IInput)data.Data));
             //    break;
-            //case EventTypeFlags.WindowLoaded:
-            //    WindowLoaded?.Invoke(data.Sender, new WindowLoadedEventArgs());
-            //    break;
+            case EventTypeFlags.WindowLoaded:
+                InvokeEvent(WindowLoaded, data.Sender, new WindowLoadedEventArgs());
+                break;
             case EventTypeFlags.WindowResized:
-                WindowResized?.Invoke(data.Sender, new WindowResizedEventArgs((Vector2)data.Data[0]));
+                InvokeEvent(WindowResized, data.Sender, new WindowResizedEventArgs((Vector2)data.Data![0]));
+                break;
+            case EventTypeFlags.WindowFileDrop:
+                InvokeEvent(WindowFileDrop, data.Sender, new WindowFileDropEventArgs((string[])data.Data![0]));
+                break;
+            case EventTypeFlags.WindowClosing:
+                InvokeEvent(WindowClosing, data.Sender, new WindowClosingEventArgs());
                 break;
         }
     }
 
-    private static void InvokeEvent<T>(EventHandler<T> handler, object? sender, T args) where T : CancelEventArgs
+    private static void InvokeEvent<T>(EventHandler<T> handler, object? sender, T args) where T : EventArgs
     {
         if (handler is null) return;
 
-        foreach (var @event in handler.GetInvocationList())
+        var delegates = handler.GetInvocationList();
+        var layers = delegates.Where(x => x.Target is Layer)
+                              .OrderByDescending(x => ((Layer)x.Target!).Order)
+                              .ToArray();
+
+        var others = delegates.Where(x => !layers.Contains(x)).ToArray();
+
+        foreach (var @event in layers)
         {
-            if (args.Cancel) break;
+            if (!((Layer)@event.Target!).Enabled)
+                continue;
+
             @event.DynamicInvoke(sender, args);
+
+            if (args is CancelEventArgs c && c.Cancel)
+                break;
+        }
+
+        {
+            if (args is CancelEventArgs c)
+                c.Cancel = false;
+        }
+
+        foreach (var @event in others)
+        {
+            @event.DynamicInvoke(sender, args);
+
+            if (args is CancelEventArgs c && c.Cancel)
+                break;
         }
     }
 }
@@ -106,43 +132,41 @@ public class MouseUpEventArgs(MouseButton button) : CancelEventArgs
     public MouseButton Button { get; } = button;
 }
 
-public class MouseDownEventArgs(MouseButton button) : CancelEventArgs
+public class MouseDownEventArgs(params MouseButton[] buttons) : CancelEventArgs
 {
-    public MouseButton Button { get; } = button;
+    public MouseButton[] Buttons { get; } = buttons;
 }
 
-public class MouseClickEventArgs(MouseButton button, Vector2 position) : CancelEventArgs
+public class MouseClickEventArgs(Vector2 position, MouseButton button) : CancelEventArgs
 {
     public MouseButton Button { get; } = button;
     public Vector2 Position { get; } = position;
 }
 
-public class MouseEventArgs(EventTypeFlags eventType, MouseButton button, Vector2 position, int x, int y) : CancelEventArgs
+public class MouseEventArgs(EventTypeFlags eventType, Vector2 position, int x, int y, params MouseButton[] buttons) : CancelEventArgs
 {
     public EventTypeFlags EventType { get; } = eventType;
-    public MouseButton Button { get; } = button;
+    public MouseButton[] Buttons { get; } = buttons;
     public Vector2 Position { get; } = position;
     public int ScrollX { get; } = x;
     public int ScrollY { get; } = y;
 }
 
-public class KeyUpEventArgs(Key key, int code) : CancelEventArgs
+public class KeyUpEventArgs(Key key) : CancelEventArgs
 {
     public Key Key { get; } = key;
-    public int Code { get; } = code;
 }
 
-public class KeyDownEventArgs(Key key, int code) : CancelEventArgs
+public class KeyDownEventArgs(params Key[] keys) : CancelEventArgs
 {
-    public Key Key { get; } = key;
-    public int Code { get; } = code;
+    public Key[] Keys { get; } = keys;
 }
 
-public class KeyboardEventArgs(EventTypeFlags eventType, Key key, int code) : CancelEventArgs
+public class KeyboardEventArgs(EventTypeFlags eventType, Key keyUp, params Key[] keysPressed) : CancelEventArgs
 {
     public EventTypeFlags EventType { get; } = eventType;
-    public Key Key { get; } = key;
-    public int Code { get; } = code;
+    public Key KeyUp { get; } = keyUp;
+    public Key[] KeysPressed { get; } = keysPressed;
 }
 
 public class WindowLoadedEventArgs() : EventArgs { }

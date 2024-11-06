@@ -51,10 +51,10 @@ public class SceneLoader : IDisposable
         _currentDirectory = string.Empty;
 
         Console.WriteLine($"Loaded {processed} entities from {Path.GetFileName(filePath)}:");
-        PrintEntities(_entityStore.Entities.Where(x => x.Id > _entityStore.Count - processed && x.Parent.IsNull), 0);
+        PrintEntities(_entityStore.Entities.Where(x => x.Id > _entityStore.Count - processed && x.Parent.IsNull));
     }
 
-    private static void PrintEntities(IEnumerable<Entity> entities, int depth)
+    private static void PrintEntities(IEnumerable<Entity> entities, int depth = 0)
     {
         Console.OutputEncoding = System.Text.Encoding.Unicode;
         foreach (var entity in entities)
@@ -265,7 +265,7 @@ public class SceneLoader : IDisposable
             var cameraNode = GetNodeByName(scene->MRootNode, camera->MName);
             
             var entity = _entityFactory.CreateCamera(camera->MName)
-                                       .SetTransformation(GetNodeTransform(cameraNode))
+                                       .SetTransform(GetNodeTransform(cameraNode))
                                        .SetAspectRatio(camera->MAspect)
                                        .SetNearFarClipPlane(camera->MClipPlaneNear, camera->MClipPlaneFar)
                                        .SetFieldOfView(camera->MHorizontalFOV)

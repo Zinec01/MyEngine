@@ -1,4 +1,5 @@
-﻿using Silk.NET.Input;
+﻿using ECSEngineTest.Input;
+using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.OpenGL.Extensions.ImGui;
@@ -11,14 +12,15 @@ public class Window
 {
     private readonly IWindow _window;
     private IInputContext _inputContext;
+    private InputManager _inputManager;
     internal static GL GL { get; private set; }
 
     public WindowState State => (WindowState)(int)_window.WindowState;
 
-    public event Action OnLoad;
-    public event Action<Vector2> OnResize;
-    public event Action<string[]> OnFileDrop;
-    public event Action OnClosing;
+    //public event Action OnLoad;
+    //public event Action<Vector2> OnResize;
+    //public event Action<string[]> OnFileDrop;
+    //public event Action OnClosing;
 
     internal event Action<double> OnUpdate;
     internal event Action<double> OnRender;
@@ -67,32 +69,17 @@ public class Window
         {
             keyboard.KeyDown += (sender, key, code) =>
             {
-                if (key == Key.Escape)
+                if (key == Silk.NET.Input.Key.Escape)
                 {
                     Close();
                     return;
                 }
-
-                //EventManager.RaiseEvent(EventTypeFlags.KeyboardEvent, this, sender);
             };
         }
 
-        foreach (var mouse in _inputContext.Mice)
-        {
-            mouse.MouseDown += (sender, button) => EventManager.RaiseEvent(EventTypeFlags.MouseDown, new EventRaiseDto { Sender = this, Data = [(Input.MouseButton)(int)button] });
-            mouse.MouseUp += (sender, button) => EventManager.RaiseEvent(EventTypeFlags.MouseUp, new EventRaiseDto { Sender = this, Data = [(Input.MouseButton)(int)button] });
-        }
+        _inputManager = new InputManager(_inputContext);
 
-        _inputContext.ConnectionChanged += (sender, args) =>
-        {
-            //EventManager.RaiseEvent(EventTypeFlags.InputConnectionChanged, this, args);
-        };
-
-        _window.FileDrop += (files) =>
-        {
-        };
-
-        OnLoad?.Invoke();
+        EventManager.RaiseEvent(EventTypeFlags.WindowLoaded, new EventRaiseDto { Sender = this });
     }
 
     private void OnWindowUpdate(double dt)
@@ -108,16 +95,16 @@ public class Window
 
     private void OnWindowFramebufferResize(Vector2D<int> newSize)
     {
-        OnResize?.Invoke(new Vector2(newSize.X, newSize.Y));
+        EventManager.RaiseEvent(EventTypeFlags.WindowResized, new EventRaiseDto { Sender = this, Data = [ new Vector2(newSize.X, newSize.Y) ] });
     }
 
     private void OnWindowFileDrop(string[] fileNames)
     {
-        OnFileDrop?.Invoke(fileNames);
+        EventManager.RaiseEvent(EventTypeFlags.WindowFileDrop, new EventRaiseDto { Sender = this, Data = [ fileNames ] });
     }
 
     private void OnWindowClosing()
     {
-        OnClosing?.Invoke();
+        EventManager.RaiseEvent(EventTypeFlags.WindowClosing, new EventRaiseDto { Sender = this });
     }
 }
