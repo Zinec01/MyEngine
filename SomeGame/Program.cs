@@ -25,7 +25,7 @@ public class Program
         var scene = app.CreateScene("Test");
 
         scene.EntityFactory.CreateCamera("Main Camera")
-                           .SetPosition(new Vector3(0.0f, 0.0f, 5.0f))
+                           .SetPosition(new Vector3(0.0f, 3.0f, 10.0f))
                            .Build();
 
         //scene.Loader.LoadScene(@"..\..\..\..\ECSEngineTest\Assets\Models\concrete_trash_bin_fixed_transforms.glb");

@@ -1,7 +1,6 @@
 ﻿using ECSEngineTest.Helpers;
 using Friflo.Engine.ECS;
 using Friflo.Engine.ECS.Systems;
-using Silk.NET.Input;
 using Silk.NET.OpenGL;
 
 namespace ECSEngineTest;
@@ -11,29 +10,29 @@ public class Scene : Layer, IDisposable
     private static uint _idGen = 0;
 
     private readonly ParallelJobRunner _runner;
-    private readonly EntityStore _store;
     private readonly SystemRoot _rootSystem;
 
     public uint Id { get; }
     public string Name { get; set; }
 
+    internal EntityStore EntityStore { get; }
     public EntityFactory EntityFactory { get; }
     public SceneLoader Loader { get; }
     public ShaderManager ShaderManager { get; }
 
-    public Scene(string name) : base(name, 0)
+    public Scene(string name, bool enabled = true) : base(name, 0, enabled)
     {
         Id = _idGen++;
         Name = name;
 
         _runner = new ParallelJobRunner(Environment.ProcessorCount);
-        _store = new EntityStore { JobRunner = _runner };
+        EntityStore = new EntityStore { JobRunner = _runner };
 
-        EntityFactory = new(_store);
-        ShaderManager = new(_store);
-        Loader = new(_store, ShaderManager, EntityFactory);
+        EntityFactory = new(EntityStore);
+        ShaderManager = new(EntityStore);
+        Loader = new(EntityStore, ShaderManager, EntityFactory);
 
-        _rootSystem = new SystemRoot(_store)
+        _rootSystem = new SystemRoot(EntityStore)
         {
             //new TestSystem()
         };
@@ -48,16 +47,16 @@ public class Scene : Layer, IDisposable
         EventManager.WindowFileDrop += OnFileDrop;
     }
 
-    internal override void OnUpdate(object? sender, LayerEventArgs args)
+    internal override void OnUpdate(LayerEventArgs args)
     {
         _rootSystem.Update(new UpdateTick((float)args.DeltaTime, (float)(DateTime.Now - Application.AppStart).TotalSeconds));
     }
 
-    internal override void OnRender(object? sender, LayerEventArgs args)
+    internal override void OnRender(LayerEventArgs args)
     {
         Window.GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-        Renderer.RenderScene(_store, args.DeltaTime);
+        Renderer.RenderScene(EntityStore, args.DeltaTime);
     }
 
     private void OnMouseClick(object? sender, MouseClickEventArgs e)
@@ -81,10 +80,10 @@ public class Scene : Layer, IDisposable
 
         if (e.Keys.Length == 2 && e.Keys.Contains(Input.Key.ControlLeft) && e.Keys.Contains(Input.Key.R))
         {
-            var query = _store.Query<EntityName>();
+            var query = EntityStore.Query<EntityName>();
             if (query.Count > 0)
             {
-                var cb = _store.GetCommandBuffer().Synced;
+                var cb = EntityStore.GetCommandBuffer().Synced;
                 query.ForEach((components, entities) =>
                 {
                     for (int i = 0; i < entities.Length; i++)
