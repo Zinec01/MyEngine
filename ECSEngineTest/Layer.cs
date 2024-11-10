@@ -1,17 +1,19 @@
 ﻿namespace ECSEngineTest;
 
-public abstract class Layer(string name, int order, bool enabled = true)
+public abstract class Layer(string name)
 {
     public string Name { get; } = name;
-    public int Order { get; } = order;
-    public bool Enabled { get; internal set; } = enabled;
+    public bool Enabled { get; set; } = true;
 
-    internal abstract void OnUpdate(LayerEventArgs args);
-    internal abstract void OnRender(LayerEventArgs args);
+    internal virtual void OnInit() { }
+    internal virtual void OnUpdate(LayerEventArgs args) { }
+    internal virtual void OnRender(LayerEventArgs args) { }
+    internal virtual void OnEvent(EventTypeFlags eventType, EventEventArgs args) { }
 }
 
-internal class LayerEventArgs(double deltaTime) : EventArgs
+public class LayerEventArgs(double deltaTime, double time) : EventArgs
 {
-    internal double DeltaTime { get; } = deltaTime;
-    internal bool Cancel { get; set; } = false;
+    public double DeltaTime { get; } = deltaTime;
+    public double Time { get; } = time;
+    public bool Cancel { get; set; } = false;
 }

@@ -9,25 +9,7 @@ public static class SceneManager
 
     public static Scene CreateScene(string name)
     {
-        if (string.IsNullOrEmpty(name))
-        {
-            name = "Scene";
-        }
-
-        int i = 0;
-        var nameOccurances = _scenes.Count(x =>
-        {
-            var split = x.Name.Split(' ');
-            var last = split[^1];
-
-            return last[0] == '('
-                && last[^1] == ')'
-                && int.TryParse(last[1..^2], out i)
-                && x.Name[..^(last.Length + 1)] == name;
-        });
-
-        if (nameOccurances > 0)
-            name += $" ({i + 1})";
+        ValidateSceneName(ref name);
 
         var scene = new Scene(name);
 
@@ -37,6 +19,7 @@ public static class SceneManager
             scene.Enabled = false;
 
         _scenes.Add(scene);
+        LayerManager.AddLayer(scene);
 
         return scene;
     }
@@ -73,8 +56,30 @@ public static class SceneManager
             currentScene.Enabled = false;
 
         scene.Enabled = true;
+    }
 
-        LayerManager.AddLayer(scene);
+    private static void ValidateSceneName(ref string name)
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            name = "Scene";
+        }
+
+        int i = 0;
+        var tmpName = name;
+        var nameOccurances = _scenes.Count(x =>
+        {
+            var split = x.Name.Split(' ');
+            var last = split[^1];
+
+            return last[0] == '('
+                && last[^1] == ')'
+                && int.TryParse(last[1..^2], out i)
+                && x.Name[..^(last.Length + 1)] == tmpName;
+        });
+
+        if (nameOccurances > 0)
+            name += $" ({i + 1})";
     }
 
     public static void Dispose()

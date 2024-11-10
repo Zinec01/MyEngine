@@ -1,127 +1,67 @@
 ﻿using Silk.NET.Input;
-using System.Numerics;
 
 namespace ECSEngineTest.Input;
 
-internal class InputManager
+public static class InputManager
 {
-    private readonly IInputContext _inputContext;
-    private readonly Dictionary<IMouse, List<MouseButton>> _pressedMouseButtons = [];
-    private readonly Dictionary<IKeyboard, List<Key>> _pressedKeys = [];
+    private static IInputContext _inputContext;
+    private static readonly Dictionary<IMouse, Mouse> _mice = [];
+    private static readonly Dictionary<IKeyboard, Keyboard> _keyboards = [];
 
-    public InputManager(IInputContext inputContext)
+    public static IReadOnlyCollection<Mouse> Mice => _mice.Values;
+    public static IReadOnlyCollection<Keyboard> Keyboards => _keyboards.Values;
+
+    public static void Init(IInputContext inputContext)
     {
         _inputContext = inputContext;
 
-        SetupMouseEvents();
-        SetupKeyboardEvents();
+        _inputContext.ConnectionChanged += OnConnectionChanged;
+
+        SetupMice();
+        SetupKeyboards();
+        SetupGamepads();
     }
 
-    private void SetupMouseEvents()
+    private static void SetupMice()
     {
         foreach (var mouse in _inputContext.Mice)
         {
-            mouse.DoubleClickTime = 200;
-
-            mouse.MouseDown   += OnMouseDown;
-            mouse.MouseUp     += OnMouseUp;
-            mouse.Click       += OnClick;
-            mouse.DoubleClick += OnDoubleClick;
-            mouse.Scroll      += OnMouseScroll;
-            mouse.MouseMove   += OnMouseMove;
+            _mice.Add(mouse, new Mouse(mouse));
         }
     }
 
-    private void SetupKeyboardEvents()
+    private static void SetupKeyboards()
     {
         foreach (var keyboard in _inputContext.Keyboards)
         {
-            keyboard.KeyDown += OnKeyDown;
-            keyboard.KeyUp   += OnKeyUp;
+            _keyboards.Add(keyboard, new Keyboard(keyboard));
         }
     }
 
-    private void OnMouseDown(IMouse mouse, Silk.NET.Input.MouseButton button)
+    private static void SetupGamepads()
     {
-        var val = (MouseButton)(int)button;
-        if (_pressedMouseButtons.TryGetValue(mouse, out var buttons))
-        {
-            buttons.Add(val);
-        }
-        else
-        {
-            buttons = [ val ];
-            _pressedMouseButtons[mouse] = buttons;
-        }
-
-        EventManager.RaiseEvent(EventTypeFlags.MouseDown, new EventRaiseDto { Sender = this, Data = [ buttons.ToArray() ] });
+        //TODO: Add gamepad support
     }
 
-    private void OnMouseUp(IMouse mouse, Silk.NET.Input.MouseButton button)
+    private static void OnConnectionChanged(Silk.NET.Input.IInputDevice device, bool isConnected)
     {
-        var val = (MouseButton)(int)button;
-        if (_pressedMouseButtons.TryGetValue(mouse, out var buttons))
+        if (device is IMouse silkMouse)
         {
-            buttons.Remove(val);
+            if (!_mice.TryGetValue(silkMouse, out var mouse))
+            {
+                _mice.Add(silkMouse, mouse = new Mouse(silkMouse));
+            }
+            
+            EventManager.RaiseEvent(EventTypeFlags.InputDeviceConnectionChanged, new EventRaiseDto { Device = mouse });
         }
-        else
+        else if (device is IKeyboard silkKeyboard)
         {
-            buttons = [];
-            _pressedMouseButtons[mouse] = buttons;
+            if (!_keyboards.TryGetValue(silkKeyboard, out var keyboard))
+            {
+                _keyboards.Add(silkKeyboard, keyboard = new Keyboard(silkKeyboard));
+            }
+            
+            EventManager.RaiseEvent(EventTypeFlags.InputDeviceConnectionChanged, new EventRaiseDto { Device = keyboard });
         }
-
-        EventManager.RaiseEvent(EventTypeFlags.MouseUp, new EventRaiseDto { Sender = this, Data = [ val ] });
-    }
-
-    private void OnClick(IMouse mouse, Silk.NET.Input.MouseButton button, Vector2 position)
-    {
-        EventManager.RaiseEvent(EventTypeFlags.MouseClick, new EventRaiseDto { Sender = this, Data = [ position, (MouseButton)(int)button] });
-    }
-
-    private void OnDoubleClick(IMouse mouse, Silk.NET.Input.MouseButton button, Vector2 vector)
-    {
-        EventManager.RaiseEvent(EventTypeFlags.MouseDoubleClick, new EventRaiseDto { Sender = this, Data = [vector, (MouseButton)(int)button] });
-    }
-
-    private void OnMouseScroll(IMouse mouse, ScrollWheel wheel)
-    {
-        EventManager.RaiseEvent(EventTypeFlags.MouseScroll, new EventRaiseDto { Sender = this, Data = [(int)wheel.X, (int)wheel.Y] });
-    }
-
-    private void OnMouseMove(IMouse mouse, Vector2 newPos)
-    {
-        EventManager.RaiseEvent(EventTypeFlags.MouseMove, new EventRaiseDto { Sender = this, Data = [ newPos ] });
-    }
-
-    private void OnKeyDown(IKeyboard keyboard, Silk.NET.Input.Key key, int code)
-    {
-        var val = (Key)(int)key;
-        if (_pressedKeys.TryGetValue(keyboard, out var keys))
-        {
-            keys.Add(val);
-        }
-        else
-        {
-            keys = [ val ];
-            _pressedKeys[keyboard] = keys;
-        }
-
-        EventManager.RaiseEvent(EventTypeFlags.KeyDown, new EventRaiseDto { Sender = this, Data = [ keys.ToArray() ] });
-    }
-
-    private void OnKeyUp(IKeyboard keyboard, Silk.NET.Input.Key key, int arg3)
-    {
-        var val = (Key)(int)key;
-        if (_pressedKeys.TryGetValue(keyboard, out var keys))
-        {
-            keys.Remove(val);
-        }
-        else
-        {
-            keys = [];
-            _pressedKeys[keyboard] = keys;
-        }
-
-        EventManager.RaiseEvent(EventTypeFlags.KeyUp, new EventRaiseDto { Sender = this, Data = [ val ] });
     }
 }

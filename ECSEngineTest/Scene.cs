@@ -20,7 +20,7 @@ public class Scene : Layer, IDisposable
     public SceneLoader Loader { get; }
     public ShaderManager ShaderManager { get; }
 
-    public Scene(string name, bool enabled = true) : base(name, 0, enabled)
+    public Scene(string name) : base(name)
     {
         Id = _idGen++;
         Name = name;
@@ -49,7 +49,7 @@ public class Scene : Layer, IDisposable
 
     internal override void OnUpdate(LayerEventArgs args)
     {
-        _rootSystem.Update(new UpdateTick((float)args.DeltaTime, (float)(DateTime.Now - Application.AppStart).TotalSeconds));
+        _rootSystem.Update(new UpdateTick((float)args.DeltaTime, (float)args.Time));
     }
 
     internal override void OnRender(LayerEventArgs args)
@@ -57,6 +57,11 @@ public class Scene : Layer, IDisposable
         Window.GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
         Renderer.RenderScene(EntityStore, args.DeltaTime);
+    }
+
+    internal override void OnEvent(EventTypeFlags eventType, EventEventArgs args)
+    {
+        Console.WriteLine($"Scene:\tEvent - {eventType}");
     }
 
     private void OnMouseClick(object? sender, MouseClickEventArgs e)
@@ -71,14 +76,14 @@ public class Scene : Layer, IDisposable
 
     private void OnMouseScroll(object? sender, MouseScrollEventArgs e)
     {
-        Console.WriteLine($"Scene:\tMouse Scroll - X: {e.X}, Y: {e.Y}");
+        Console.WriteLine($"Scene:\tMouse Scroll - X: {e.Scroll.X}, Y: {e.Scroll.Y}");
     }
 
     private void OnKeyDown(object? sender, KeyDownEventArgs e)
     {
-        Console.WriteLine($"Scene:\tKey Down - {e.Keys.Select(x => x.ToString()).Aggregate((c, n) => c + ", " + n)}");
+        Console.WriteLine($"Scene:\tKey Down - {e.Keyboard.PressedKeys.Select(x => x.ToString()).Aggregate((c, n) => c + ", " + n)}");
 
-        if (e.Keys.Length == 2 && e.Keys.Contains(Input.Key.ControlLeft) && e.Keys.Contains(Input.Key.R))
+        if (e.Keyboard.PressedKeys.Count == 2 && e.Keyboard.PressedKeys.Contains(Input.Key.ControlLeft) && e.Keyboard.PressedKeys.Contains(Input.Key.R))
         {
             var query = EntityStore.Query<EntityName>();
             if (query.Count > 0)
@@ -125,7 +130,7 @@ public class Scene : Layer, IDisposable
 
     public void OnMouseDown(object? sender, MouseDownEventArgs e)
     {
-        Console.WriteLine($"Scene:\tMouse Down - {e.Buttons.Select(x => x.ToString()).Aggregate((c, n) => c + ", " + n)}");
+        Console.WriteLine($"Scene:\tMouse Down - {e.Mouse.PressedButtons.Select(x => x.ToString()).Aggregate((c, n) => c + ", " + n)}");
     }
 
     public void OnMouseUp(object? sender, MouseUpEventArgs e)

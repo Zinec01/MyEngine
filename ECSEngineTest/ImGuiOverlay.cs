@@ -4,7 +4,7 @@ using System.Numerics;
 
 namespace ECSEngineTest;
 
-internal class Editor : Layer
+public class ImGuiOverlay : Layer
 {
     private readonly ImGuiController _imGuiController;
     private float _refreshRate = 0.25f;
@@ -16,7 +16,7 @@ internal class Editor : Layer
 
     private static EntityStore? Store => SceneManager.ActiveScene?.EntityStore;
 
-    public Editor(string name, ImGuiController imGuiController) : base(name, int.MaxValue)
+    public ImGuiOverlay(string name, ImGuiController imGuiController) : base(name)
     {
         _imGuiController = imGuiController;
 
@@ -62,6 +62,11 @@ internal class Editor : Layer
         //ImGuiNET.ImGui.ShowDemoWindow();
 
         _imGuiController.Render();
+    }
+
+    internal override void OnEvent(EventTypeFlags eventType, EventEventArgs args)
+    {
+        Console.WriteLine($"Editor:\tEvent - {eventType}");
     }
 
     private void CreateInfoWindow(Vector2 position, Vector2? size = null)
@@ -116,7 +121,7 @@ internal class Editor : Layer
 
     public void OnMouseDown(object? sender, MouseDownEventArgs e)
     {
-        Console.WriteLine($"Editor:\tMouse Down - {e.Buttons.Select(x => x.ToString()).Aggregate((c, n) => c + ", " + n)}");
+        Console.WriteLine($"Editor:\tMouse Down - {e.Mouse.PressedButtons.Select(x => x.ToString()).Aggregate((c, n) => c + ", " + n)}");
 
         e.Cancel = ImGuiNET.ImGui.GetIO().WantCaptureMouse;
     }
@@ -144,14 +149,19 @@ internal class Editor : Layer
 
     private void OnMouseScroll(object? sender, MouseScrollEventArgs e)
     {
-        Console.WriteLine($"Editor:\tMouse Scroll - X: {e.X}, Y: {e.Y}");
+        Console.WriteLine($"Editor:\tMouse Scroll - X: {e.Scroll.X}, Y: {e.Scroll.Y}");
 
         e.Cancel = ImGuiNET.ImGui.GetIO().WantCaptureMouse;
     }
 
     private void OnKeyDown(object? sender, KeyDownEventArgs e)
     {
-        Console.WriteLine($"Editor:\tKey Down - {e.Keys.Select(x => x.ToString()).Aggregate((c, n) => c + ", " + n)}");
+        Console.WriteLine($"Editor:\tKey Down - {e.Keyboard.PressedKeys.Select(x => x.ToString()).Aggregate((c, n) => c + ", " + n)}");
+
+        if (e.Key == Input.Key.F1)
+        {
+            Enabled = !Enabled;
+        }
 
         e.Cancel = ImGuiNET.ImGui.GetIO().WantCaptureMouse;
     }

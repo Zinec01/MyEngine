@@ -4,6 +4,7 @@ using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.OpenGL.Extensions.ImGui;
 using Silk.NET.Windowing;
+using System.Drawing;
 using System.Numerics;
 
 namespace ECSEngineTest;
@@ -12,18 +13,19 @@ public class Window
 {
     private readonly IWindow _window;
     private IInputContext _inputContext;
-    private InputManager _inputManager;
     internal static GL GL { get; private set; }
 
+    public Color BackgroundColor { get; set; } = Color.FromArgb(222, 235, 255);
+    public string Title { get => _window.Title; set => _window.Title = value; }
     public WindowState State => (WindowState)(int)_window.WindowState;
+    public Vector2 Size => new Vector2(_window.Size.X, _window.Size.Y);
+    public Vector2 FrameBufferSize => new Vector2(_window.FramebufferSize.X, _window.FramebufferSize.Y);
+    public Vector2 Position => new Vector2(_window.Position.X, _window.Position.Y);
+    public bool VSync { get => _window.VSync; set => _window.VSync = value; }
+    public double Time => _window.Time;
 
-    //public event Action OnLoad;
-    //public event Action<Vector2> OnResize;
-    //public event Action<string[]> OnFileDrop;
-    //public event Action OnClosing;
-
-    internal event Action<double> OnUpdate;
-    internal event Action<double> OnRender;
+    internal event Action<double, double> OnUpdate;
+    internal event Action<double, double> OnRender;
 
     public Window(WindowSettings settings)
     {
@@ -45,7 +47,6 @@ public class Window
     public void Run()
     {
         _window.Run();
-        // TODO: WindowDisposing Event
         _window.Dispose();
     }
 
@@ -54,7 +55,7 @@ public class Window
         _window.Close();
     }
 
-    public ImGuiController CreateImGui()
+    public ImGuiController CreateImGuiController()
     {
         return new ImGuiController(GL, _window, _inputContext);
     }
@@ -62,49 +63,37 @@ public class Window
     private void OnWindowLoad()
     {
         _inputContext = _window.CreateInput();
-        GL = GL.GetApi(_window);
+        GL ??= GL.GetApi(_window);
         _window.Center();
 
-        foreach (var keyboard in _inputContext.Keyboards)
-        {
-            keyboard.KeyDown += (sender, key, code) =>
-            {
-                if (key == Silk.NET.Input.Key.Escape)
-                {
-                    Close();
-                    return;
-                }
-            };
-        }
+        InputManager.Init(_inputContext);
 
-        _inputManager = new InputManager(_inputContext);
-
-        EventManager.RaiseEvent(EventTypeFlags.WindowLoaded, new EventRaiseDto { Sender = this });
+        EventManager.RaiseEvent(EventTypeFlags.WindowLoaded, new EventRaiseDto { Sender = this, Window = this });
     }
 
     private void OnWindowUpdate(double dt)
     {
-        OnUpdate?.Invoke(dt);
+        OnUpdate?.Invoke(dt, _window.Time);
         MainThreadDispatcher.ExecuteOnMainThread();
     }
 
     private void OnWindowRender(double dt)
     {
-        OnRender?.Invoke(dt);
+        OnRender?.Invoke(dt, _window.Time);
     }
 
     private void OnWindowFramebufferResize(Vector2D<int> newSize)
     {
-        EventManager.RaiseEvent(EventTypeFlags.WindowResized, new EventRaiseDto { Sender = this, Data = [ new Vector2(newSize.X, newSize.Y) ] });
+        EventManager.RaiseEvent(EventTypeFlags.WindowResized, new EventRaiseDto { Sender = this, Window = this });
     }
 
-    private void OnWindowFileDrop(string[] fileNames)
+    private void OnWindowFileDrop(string[] filePaths)
     {
-        EventManager.RaiseEvent(EventTypeFlags.WindowFileDrop, new EventRaiseDto { Sender = this, Data = [ fileNames ] });
+        EventManager.RaiseEvent(EventTypeFlags.WindowFileDrop, new EventRaiseDto { Sender = this, Window = this, FilePaths = filePaths });
     }
 
     private void OnWindowClosing()
     {
-        EventManager.RaiseEvent(EventTypeFlags.WindowClosing, new EventRaiseDto { Sender = this });
+        EventManager.RaiseEvent(EventTypeFlags.WindowClosing, new EventRaiseDto { Sender = this, Window = this });
     }
 }

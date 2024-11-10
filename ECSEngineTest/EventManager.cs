@@ -16,10 +16,10 @@ public static class EventManager
 
     public static event EventHandler<KeyUpEventArgs> KeyUp;
     public static event EventHandler<KeyDownEventArgs> KeyDown;
+    public static event EventHandler<KeyCharEventArgs> KeyChar;
     public static event EventHandler<KeyboardEventArgs> KeyboardEvent;
 
-    //public static event EventHandler<InputConnectionChangedEventArgs> InputConnectionChanged;
-    //public static event EventHandler<InputEventArgs> InputEvent;
+    public static event EventHandler<InputDeviceConnectionChangedEventArgs> InputDeviceConnectionChanged;
 
     public static event EventHandler<WindowLoadedEventArgs> WindowLoaded;
     public static event EventHandler<WindowResizedEventArgs> WindowResized;
@@ -29,163 +29,209 @@ public static class EventManager
 
     internal static void RaiseEvent(EventTypeFlags eventType, EventRaiseDto data)
     {
-        if (data == null || data.Data is null && !(eventType == EventTypeFlags.WindowLoaded || eventType == EventTypeFlags.WindowClosing))
-            return;
+        if (data == null) return;
+
+        LayerManager.RaiseEvent(eventType, new EventEventArgs(data.Device, data.MouseButton, data.Key, data.Window, data.FilePaths));
 
         switch (eventType)
         {
             case EventTypeFlags.MouseMove:
-                InvokeEvent(MouseMove, data.Sender, new MouseMoveEventArgs((Vector2)data.Data![0]));
+            {
+                if (data.Device is not Mouse mouse) return;
+                InvokeEvent(MouseMove, data.Sender, new MouseMoveEventArgs(mouse, mouse.Position));
                 break;
+            }
             case EventTypeFlags.MouseScroll:
-                InvokeEvent(MouseScroll, data.Sender, new MouseScrollEventArgs((int)data.Data![0], (int)data.Data[1]));
+            {
+                if (data.Device is not Mouse mouse) return;
+                InvokeEvent(MouseScroll, data.Sender, new MouseScrollEventArgs(mouse, mouse.Scroll));
                 break;
+            }
             case EventTypeFlags.MouseUp:
-                InvokeEvent(MouseUp, data.Sender, new MouseUpEventArgs((MouseButton)data.Data![0]));
+            {
+                if (data.Device is not Mouse mouse) return;
+                InvokeEvent(MouseUp, data.Sender, new MouseUpEventArgs(mouse, data.MouseButton));
                 break;
+            }
             case EventTypeFlags.MouseDown:
-                InvokeEvent(MouseDown, data.Sender, new MouseDownEventArgs((MouseButton[])data.Data![0]));
+            {
+                if (data.Device is not Mouse mouse) return;
+                InvokeEvent(MouseDown, data.Sender, new MouseDownEventArgs(mouse, data.MouseButton));
                 break;
+            }
             case EventTypeFlags.MouseClick:
-                InvokeEvent(MouseClick, data.Sender, new MouseClickEventArgs((Vector2)data.Data![0], (MouseButton)data.Data[1]));
+            {
+                if (data.Device is not Mouse mouse) return;
+                InvokeEvent(MouseClick, data.Sender, new MouseClickEventArgs(mouse, mouse.Position, data.MouseButton));
                 break;
+            }
             case EventTypeFlags.MouseDoubleClick:
-                InvokeEvent(MouseDoubleClick, data.Sender, new MouseClickEventArgs((Vector2)data.Data![0], (MouseButton)data.Data[1]));
+            {
+                if (data.Device is not Mouse mouse) return;
+                InvokeEvent(MouseDoubleClick, data.Sender, new MouseClickEventArgs(mouse, mouse.Position, data.MouseButton));
                 break;
+            }
             case EventTypeFlags.KeyUp:
-                InvokeEvent(KeyUp, data.Sender, new KeyUpEventArgs((Key)data.Data![0]));
+            {
+                if (data.Device is not Keyboard keyboard) return;
+                InvokeEvent(KeyUp, data.Sender, new KeyUpEventArgs(keyboard, data.Key));
                 break;
+            }
             case EventTypeFlags.KeyDown:
-                InvokeEvent(KeyDown, data.Sender, new KeyDownEventArgs((Key[])data.Data![0]));
+            {
+                if (data.Device is not Keyboard keyboard) return;
+                InvokeEvent(KeyDown, data.Sender, new KeyDownEventArgs(keyboard, data.Key));
                 break;
-            //case EventTypeFlags.InputConnectionChanged:
-            //    InputConnectionChanged?.Invoke(data.Sender, new InputConnectionChangedEventArgs((InputConnection)data.Data));
-            //    break;
-            //case EventTypeFlags.InputEvent:
-            //    InputEvent?.Invoke(data.Sender, new InputEventArgs(eventType, (IInput)data.Data));
-            //    break;
+            }
+            case EventTypeFlags.KeyChar:
+            {
+                if (data.Device is not Keyboard keyboard) return;
+                InvokeEvent(KeyChar, data.Sender, new KeyCharEventArgs(keyboard, data.Char));
+                break;
+            }
+            case EventTypeFlags.InputDeviceConnectionChanged:
+            {
+                InvokeEvent(InputDeviceConnectionChanged, data.Sender, new InputDeviceConnectionChangedEventArgs(data.Device, data.Device.IsConnected));
+                break;
+            }
             case EventTypeFlags.WindowLoaded:
-                InvokeEvent(WindowLoaded, data.Sender, new WindowLoadedEventArgs());
+            {
+                InvokeEvent(WindowLoaded, data.Sender, new WindowLoadedEventArgs(data.Window));
                 break;
+            }
             case EventTypeFlags.WindowResized:
-                InvokeEvent(WindowResized, data.Sender, new WindowResizedEventArgs((Vector2)data.Data![0]));
+            {
+                InvokeEvent(WindowResized, data.Sender, new WindowResizedEventArgs(data.Window, data.Window.Size));
                 break;
+            }
             case EventTypeFlags.WindowFileDrop:
-                InvokeEvent(WindowFileDrop, data.Sender, new WindowFileDropEventArgs((string[])data.Data![0]));
+            {
+                InvokeEvent(WindowFileDrop, data.Sender, new WindowFileDropEventArgs(data.Window, data.FilePaths));
                 break;
+            }
             case EventTypeFlags.WindowClosing:
-                InvokeEvent(WindowClosing, data.Sender, new WindowClosingEventArgs());
+            {
+                InvokeEvent(WindowClosing, data.Sender, new WindowClosingEventArgs(data.Window));
                 break;
+            }
         }
     }
 
-    private static void InvokeEvent<T>(EventHandler<T> handler, object? sender, T args) where T : EventArgs
+    private static void InvokeEvent<T>(EventHandler<T> handler, object? sender, T args) where T : CancelEventArgs
     {
         if (handler is null) return;
 
-        var delegates = handler.GetInvocationList();
-        var layers = delegates.Where(x => x.Target is Layer)
-                              .OrderByDescending(x => ((Layer)x.Target!).Order)
-                              .ToArray();
-
-        var others = delegates.Where(x => !layers.Contains(x)).ToArray();
-
-        foreach (var @event in layers)
-        {
-            if (!((Layer)@event.Target!).Enabled)
-                continue;
-
-            @event.DynamicInvoke(sender, args);
-
-            if (args is CancelEventArgs c && c.Cancel)
-                break;
-        }
-
-        {
-            if (args is CancelEventArgs c)
-                c.Cancel = false;
-        }
-
-        foreach (var @event in others)
+        foreach (var @event in handler.GetInvocationList())
         {
             @event.DynamicInvoke(sender, args);
 
-            if (args is CancelEventArgs c && c.Cancel)
-                break;
+            if (args.Cancel) break;
         }
     }
 }
 
-public class MouseMoveEventArgs(Vector2 position) : CancelEventArgs
+public class MouseMoveEventArgs(Mouse mouse, Vector2 position) : CancelEventArgs
 {
+    public Mouse Mouse { get; } = mouse;
     public Vector2 Position { get; } = position;
 }
 
-public class MouseScrollEventArgs(int x, int y) : CancelEventArgs
+public class MouseScrollEventArgs(Mouse mouse, Vector2 scroll) : CancelEventArgs
 {
-    public int X { get; } = x;
-    public int Y { get; } = y;
+    public Mouse Mouse { get; } = mouse;
+    public Vector2 Scroll { get; } = scroll;
 }
 
-public class MouseUpEventArgs(MouseButton button) : CancelEventArgs
+public class MouseUpEventArgs(Mouse mouse, MouseButton button) : CancelEventArgs
 {
+    public Mouse Mouse { get; } = mouse;
     public MouseButton Button { get; } = button;
 }
 
-public class MouseDownEventArgs(params MouseButton[] buttons) : CancelEventArgs
+public class MouseDownEventArgs(Mouse mouse, MouseButton button) : CancelEventArgs
 {
-    public MouseButton[] Buttons { get; } = buttons;
+    public Mouse Mouse { get; } = mouse;
+    public MouseButton Button { get; } = button;
 }
 
-public class MouseClickEventArgs(Vector2 position, MouseButton button) : CancelEventArgs
+public class MouseClickEventArgs(Mouse mouse, Vector2 position, MouseButton button) : CancelEventArgs
 {
+    public Mouse Mouse { get; } = mouse;
     public MouseButton Button { get; } = button;
     public Vector2 Position { get; } = position;
 }
 
-public class MouseEventArgs(EventTypeFlags eventType, Vector2 position, int x, int y, params MouseButton[] buttons) : CancelEventArgs
+public class MouseEventArgs(EventTypeFlags eventType, Mouse mouse) : CancelEventArgs
 {
     public EventTypeFlags EventType { get; } = eventType;
-    public MouseButton[] Buttons { get; } = buttons;
-    public Vector2 Position { get; } = position;
-    public int ScrollX { get; } = x;
-    public int ScrollY { get; } = y;
+    public Mouse Mouse { get; } = mouse;
 }
 
-public class KeyUpEventArgs(Key key) : CancelEventArgs
+public class KeyUpEventArgs(Keyboard keyboard, Key key) : CancelEventArgs
 {
+    public Keyboard Keyboard { get; } = keyboard;
     public Key Key { get; } = key;
 }
 
-public class KeyDownEventArgs(params Key[] keys) : CancelEventArgs
+public class KeyDownEventArgs(Keyboard keyboard, Key key) : CancelEventArgs
 {
-    public Key[] Keys { get; } = keys;
+    public Keyboard Keyboard { get; } = keyboard;
+    public Key Key { get; } = key;
 }
 
-public class KeyboardEventArgs(EventTypeFlags eventType, Key keyUp, params Key[] keysPressed) : CancelEventArgs
+public class KeyCharEventArgs(Keyboard keyboard, char ch) : CancelEventArgs
+{
+    public Keyboard Keyboard { get; } = keyboard;
+    public char Char { get; } = ch;
+}
+
+public class KeyboardEventArgs(EventTypeFlags eventType, Keyboard keyboard, Key key) : CancelEventArgs
 {
     public EventTypeFlags EventType { get; } = eventType;
-    public Key KeyUp { get; } = keyUp;
-    public Key[] KeysPressed { get; } = keysPressed;
+    public Keyboard Keyboard { get; } = keyboard;
+    public Key Key { get; } = key;
 }
 
-public class WindowLoadedEventArgs() : EventArgs { }
-
-public class WindowResizedEventArgs(Vector2 newSize) : CancelEventArgs
+public class InputDeviceConnectionChangedEventArgs(IInputDevice device, bool isConnected) : CancelEventArgs
 {
-    public Vector2 NewSize { get; } = newSize;
+    public IInputDevice Device { get; } = device;
+    public bool IsConnected { get; } = isConnected;
 }
 
-public class WindowFileDropEventArgs(string[] filePaths) : CancelEventArgs
+public class WindowLoadedEventArgs(Window window) : CancelEventArgs
 {
+    public Window Window { get; } = window;
+}
+
+public class WindowResizedEventArgs(Window window, Vector2 size) : CancelEventArgs
+{
+    public Window Window { get; } = window;
+    public Vector2 Size { get; } = size;
+}
+
+public class WindowFileDropEventArgs(Window window, string[] filePaths) : CancelEventArgs
+{
+    public Window Window { get; } = window;
     public string[] FilePaths { get; } = filePaths;
 }
 
-public class WindowClosingEventArgs() : EventArgs { }
+public class WindowClosingEventArgs(Window window) : CancelEventArgs
+{
+    public Window Window { get; } = window;
+}
 
-public class WindowEventArgs(EventTypeFlags eventType, Vector2 newSize, string[] filePaths) : CancelEventArgs
+public class WindowEventArgs(Window window, EventTypeFlags eventType, string[] filePaths) : CancelEventArgs
 {
     public EventTypeFlags EventType { get; } = eventType;
-    public Vector2 NewSize { get; } = newSize;
+    public Window Window { get; } = window;
+    public string[] FilePaths { get; } = filePaths;
+}
+
+public class EventEventArgs(IInputDevice device, MouseButton button, Key key, Window window, string[] filePaths) : CancelEventArgs
+{
+    public IInputDevice InputDevice { get; } = device;
+    public MouseButton Button { get; } = button;
+    public Key Key { get; } = key;
+    public Window Window { get; } = window;
     public string[] FilePaths { get; } = filePaths;
 }

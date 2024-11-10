@@ -1,5 +1,6 @@
 ﻿//using MyEngine;
 using ECSEngineTest;
+using ECSEngineTest.Input;
 using System.Numerics;
 
 namespace SomeGame;
@@ -22,7 +23,18 @@ public class Program
 
     private static void InitApp(Application app)
     {
-        var scene = app.CreateScene("Test");
+        EventManager.KeyDown += (sender, e) =>
+        {
+            if (e.Key == Key.Escape)
+            {
+                app.Window.Close();
+                e.Cancel = true;
+            }
+        };
+
+        app.AddImGuiOverlay();
+
+        var scene = SceneManager.CreateScene("Test");
 
         scene.EntityFactory.CreateCamera("Main Camera")
                            .SetPosition(new Vector3(0.0f, 3.0f, 10.0f))

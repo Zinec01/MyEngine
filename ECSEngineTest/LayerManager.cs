@@ -1,23 +1,28 @@
 ﻿namespace ECSEngineTest;
 
-internal static class LayerManager
+public static class LayerManager
 {
-    private static readonly SortedSet<Layer> _layers = new(new LayerComparer());
-    public static IReadOnlyList<Layer> Layers => [.. _layers];
+    private static readonly List<Layer> _layers = [];
+    public static IReadOnlyList<Layer> Layers => _layers;
 
-    public static bool AddLayer(Layer layer)
+    public static void AddLayer(Layer layer)
     {
-        return _layers.Add(layer);
+        _layers.Add(layer);
     }
 
-    public static bool RemoveLayer(Layer layer)
+    public static void AddOverlay(Layer overlay)
     {
-        return _layers.Remove(layer);
+        _layers.Insert(0, overlay);
     }
 
-    public static void Update(double deltaTime)
+    public static void RemoveLayer(Layer layer)
     {
-        var args = new LayerEventArgs(deltaTime);
+        _layers.Remove(layer);
+    }
+
+    internal static void Update(double deltaTime, double time)
+    {
+        var args = new LayerEventArgs(deltaTime, time);
         for (int i = _layers.Count - 1; i >= 0; i--)
         {
             var layer = _layers.ElementAt(i);
@@ -30,10 +35,10 @@ internal static class LayerManager
         }
     }
 
-    public static void Render(double deltaTime)
+    internal static void Render(double deltaTime, double time)
     {
-        var args = new LayerEventArgs(deltaTime);
-        for (int i = 0; i < _layers.Count; i++)
+        var args = new LayerEventArgs(deltaTime, time);
+        for (int i = _layers.Count - 1; i >= 0; i--)
         {
             var layer = _layers.ElementAt(i);
             if (layer is null || !layer.Enabled)
@@ -44,16 +49,18 @@ internal static class LayerManager
             if (args.Cancel) break;
         }
     }
-}
 
-internal class LayerComparer : IComparer<Layer>
-{
-    public int Compare(Layer? x, Layer? y)
+    internal static void RaiseEvent(EventTypeFlags eventType, EventEventArgs args)
     {
-        if (x is null && y is null) return 0;
-        if (x is null) return -1;
-        if (y is null) return 1;
+        for (int i = 0; i < _layers.Count; i++)
+        {
+            var layer = _layers.ElementAt(i);
+            if (layer is null || !layer.Enabled)
+                continue;
 
-        return x.Order.CompareTo(y.Order);
+            layer.OnEvent(eventType, args);
+
+            if (args.Cancel) break;
+        }
     }
 }

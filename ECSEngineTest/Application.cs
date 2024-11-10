@@ -5,7 +5,7 @@ namespace ECSEngineTest;
 
 public class Application : IDisposable
 {
-    private readonly Window _mainWindow;
+    public Window Window { get; }
 
     public static DateTime AppStart { get; private set; }
 
@@ -13,18 +13,21 @@ public class Application : IDisposable
 
     public Application(WindowSettings windowSettings)
     {
-        _mainWindow = new(windowSettings);
-        _mainWindow.OnUpdate += OnMainWindowUpdate;
-        _mainWindow.OnRender += OnMainWindowRender;
+        Window = new(windowSettings);
+        Window.OnUpdate += LayerManager.Update;
+        Window.OnRender += LayerManager.Render;
 
-        EventManager.WindowLoaded += OnMainWindowLoaded;
-        EventManager.WindowClosing += OnMainWindowClosing;
+        EventManager.WindowLoaded += OnWindowLoaded;
+        EventManager.WindowClosing += OnWindowClosing;
     }
 
-    private void OnMainWindowLoaded(object? sender, WindowLoadedEventArgs e)
+    public void AddImGuiOverlay()
     {
-        CreateEditor();
+        LayerManager.AddOverlay(new ImGuiOverlay("ImGuiOverlay", Window.CreateImGuiController()));
+    }
 
+    private void OnWindowLoaded(object? sender, WindowLoadedEventArgs e)
+    {
         Window.GL.Enable(EnableCap.DepthTest);
         Window.GL.Enable(EnableCap.CullFace);
         Window.GL.CullFace(TriangleFace.Back);
@@ -37,42 +40,17 @@ public class Application : IDisposable
         Init?.Invoke(this);
     }
 
-    private void OnMainWindowClosing(object? sender, WindowClosingEventArgs e)
+    private void OnWindowClosing(object? sender, WindowClosingEventArgs e)
     {
         ShaderManager.Dispose();
         ShaderUniforms.Dispose();
         MeshManager.DisposeAllMeshes();
     }
 
-    private void OnMainWindowUpdate(double deltaTime)
-    {
-        LayerManager.Update(deltaTime);
-    }
-
-    private void OnMainWindowRender(double deltaTime)
-    {
-        LayerManager.Render(deltaTime);
-    }
-
-    public Scene CreateScene(string name)
-    {
-        return SceneManager.CreateScene(name);
-    }
-
-    private void CreateEditor()
-    {
-        _layers[1] = new Editor("ImGui Editor", _mainWindow.CreateImGui());
-    }
-
-    public void DeleteScene(Scene scene)
-    {
-        SceneManager.DeleteScene(scene);
-    }
-
     public void Run()
     {
         AppStart = DateTime.Now;
-        _mainWindow.Run();
+        Window.Run();
     }
 
     public void Dispose()
