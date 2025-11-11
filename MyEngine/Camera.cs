@@ -30,6 +30,7 @@ public class Camera : CameraTransform
     {
         shaderProgram.SetUniform(Shader.ProjectionMatrix, ProjectMat);
         shaderProgram.SetUniform(Shader.ViewMatrix, ViewMat);
+        shaderProgram.SetUniform("cameraPos", CurrentPosition);
     }
 
     public override void Update(float deltaTime)

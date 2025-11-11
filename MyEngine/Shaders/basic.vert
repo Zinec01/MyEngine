@@ -1,19 +1,17 @@
 ﻿//#version 330 core
 #version 460
 
-layout (location = 0) in vec3 vaPos;
-layout (location = 1) in vec2 vaUv;
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec2 aUv;
 
-uniform mat4 vuModelMat;
-uniform mat4 vuViewMat;
-uniform mat4 vuProjectMat;
+uniform mat4 uModelMat;
+uniform mat4 uViewMat;
+uniform mat4 uProjectMat;
 
-out vec3 vfPos;
-out vec2 vfUv;
+out vec2 uv;
 
 void main()
 {
-	gl_Position = vuProjectMat * vuViewMat * vuModelMat * vec4(vaPos, 1.0f);
-	vfPos = vec3(clamp(gl_Position, 0, 1));
-	vfUv = vaUv;
+	gl_Position = uProjectMat * uViewMat * uModelMat * vec4(aPos, 1.0f);
+	uv = aUv;
 }

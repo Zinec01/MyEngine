@@ -1,7 +1,6 @@
 ﻿using MyEngine.EventArgs;
 using MyEngine.Interfaces;
 using Silk.NET.OpenGL;
-using System.ComponentModel.DataAnnotations;
 using System.Numerics;
 
 namespace MyEngine;
@@ -72,14 +71,17 @@ public class GameObject : GameObjectTransform, ITransformable, IDisposable
 
     public unsafe void SetupVertexAttribs()
     {
-        _gl.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, (uint)sizeof(float) * 5, null);
+        _gl.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, (uint)sizeof(float) * 8, null);
         _gl.EnableVertexAttribArray(0);
 
         //if (Texture != null)
         //{
-            _gl.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, (uint)sizeof(float) * 5, (void*)(sizeof(float) * 3));
+            _gl.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, (uint)sizeof(float) * 8, (void*)(sizeof(float) * 3));
             _gl.EnableVertexAttribArray(1);
         //}
+
+        _gl.VertexAttribPointer(2, 2, VertexAttribPointerType.Float, false, (uint)sizeof(float) * 8, (void*)(sizeof(float) * 6));
+        _gl.EnableVertexAttribArray(2);
     }
 
     public override void Update(float deltaTime)
@@ -111,7 +113,7 @@ public class GameObject : GameObjectTransform, ITransformable, IDisposable
         Texture?.Deactivate();
 
 
-        DrawTriangleLines(shaderProgram, TexGreen);
+        //DrawTriangleLines(shaderProgram, TexGreen);
     }
 
     private unsafe void DrawTriangleLines(ShaderProgram shaderProgram, Texture lineTexture, byte layers = 10)
